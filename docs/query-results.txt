@@ -1,0 +1,48 @@
+  study_code  | participant_code | visit_id |       scheduled_for       | visit_type |  status   | coordinator_code | due_label 
+--------------+------------------+----------+---------------------------+------------+-----------+------------------+-----------
+ STD-SLEEP-01 | P-0001           |       15 | 2026-11-21 10:00:00+05:30 | FOLLOW_UP  | SCHEDULED | COORD-01         | Due
+ STD-SLEEP-01 | P-0006           |       16 | 2026-11-23 11:00:00+05:30 | BASELINE   | SCHEDULED | COORD-02         | Due
+(2 rows)
+
+  status   | visit_count 
+-----------+-------------
+ SCHEDULED |           7
+ COMPLETED |           8
+ MISSED    |           4
+ CANCELLED |           1
+(4 rows)
+
+ due_7_days | overdue 
+------------+---------
+          2 |       2
+(1 row)
+
+ summary_id | visit_id |        visit_date         | participant_code |  study_code  |        drafted_at         |  review_state   
+------------+----------+---------------------------+------------------+--------------+---------------------------+-----------------
+          5 |        3 | 2026-10-12 11:00:00+05:30 | P-0002           | STD-SLEEP-01 | 2026-11-17 10:00:00+05:30 | AWAITING REVIEW
+          6 |        7 | 2026-11-10 10:00:00+05:30 | P-0003           | STD-MOB-REG  | 2026-11-18 09:00:00+05:30 | AWAITING REVIEW
+(2 rows)
+
+ active_participants | scheduled | due_7_days | overdue | completed | missed | cancelled | open_follow_up_actions | awaiting_review 
+---------------------+-----------+------------+---------+-----------+--------+-----------+------------------------+-----------------
+                  10 |         7 |          2 |       2 |         8 |      4 |         1 |                     12 |               2
+(1 row)
+
+ summary_id | participant_code | source_notes |                                                                                               ai_draft                                                                                                | decision |                                                                                                    reviewer_final                                                                                                     | reviewer_code | corrected_by_reviewer 
+------------+------------------+--------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------+-----------------------
+          1 | P-0001           |            1 | Baseline visit completed. The participant returned a fully completed 7-day sleep diary with an average reported sleep of 6.5 hours per night. A wearable device was issued and pairing was confirmed. | APPROVED | Baseline visit completed. The participant returned a fully completed 7-day sleep diary with an average reported sleep of 6.5 hours per night. A wearable device was issued and pairing was confirmed.                 | REV-01        | f
+          2 | P-0001           |            2 | The participant reported waking twice per night on most days this month. Wearable data was uploaded for 26 of 30 days and questionnaire Q-12 was completed.                                           | APPROVED | The participant reported waking twice per night on most days this month. Wearable data was uploaded for 26 of 30 days because the device was not worn on four nights during travel. Questionnaire Q-12 was completed. | REV-01        | t
+          3 | P-0001           |            2 | Baseline mobility check completed. The participant walked the 6-minute course and covered 410 metres. No falls were reported since enrolment.                                                         | APPROVED | Baseline mobility check completed. The participant walked the 6-minute course and covered 420 metres, as corrected in the follow-up note. No falls were reported since enrolment.                                     | REV-02        | t
+          4 | P-0003           |            1 | The participant attended the visit and described their sleep as about the same as before. The sleep diary was not returned.                                                                           | REJECTED |                                                                                                                                                                                                                       | REV-02        | t
+(4 rows)
+
+        created_at         | entity_type | entity_id |        action        | actor_code | old_value | new_value 
+---------------------------+-------------+-----------+----------------------+------------+-----------+-----------
+ 2026-10-10 12:00:00+05:30 | visit       |         2 | VISIT_SCHEDULED      | COORD-01   |           | SCHEDULED
+ 2026-11-07 11:00:00+05:30 | visit       |         2 | VISIT_STATUS_CHANGED | COORD-01   | SCHEDULED | COMPLETED
+ 2026-11-07 12:00:00+05:30 | note        |         2 | NOTE_ADDED           | COORD-01   |           | visit 2
+ 2026-11-08 12:00:00+05:30 | summary     |         2 | AI_DRAFT_REQUESTED   | COORD-01   |           | SUCCEEDED
+ 2026-11-08 14:00:00+05:30 | note        |        10 | NOTE_ADDED           | COORD-01   |           | visit 2
+ 2026-11-09 11:00:00+05:30 | review      |         2 | REVIEW_APPROVED      | REV-01     | DRAFT     | APPROVED
+(6 rows)
+
