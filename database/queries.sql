@@ -132,3 +132,32 @@ WHERE (e.entity_type = 'visit'   AND e.entity_id = 2)
                                                      JOIN ai_summaries a ON a.summary_id = r.summary_id
                                                      WHERE a.visit_id = 2))
 ORDER BY e.created_at, e.event_id;
+
+
+-- ---------------------------------------------------------------------
+-- Q7 (optional): the same counts split by owner, to match each user's dashboard
+--     The app shows each coordinator only their own participants' visits,
+--     and each reviewer only their own queue.
+-- ---------------------------------------------------------------------
+SELECT
+    p.coordinator_code,
+    COUNT(DISTINCT p.participant_id) FILTER (WHERE p.consent_status = 'ACTIVE') AS active_participants,
+    COUNT(v.visit_id) FILTER (WHERE v.status = 'SCHEDULED')                     AS scheduled,
+    COUNT(v.visit_id) FILTER (WHERE v.status = 'COMPLETED')                     AS completed,
+    COUNT(v.visit_id) FILTER (WHERE v.status = 'MISSED')                        AS missed
+FROM participants p
+LEFT JOIN visits v ON v.participant_id = p.participant_id
+GROUP BY p.coordinator_code
+ORDER BY p.coordinator_code;
+
+SELECT
+    p.reviewer_code,
+    COUNT(*) AS awaiting_review
+FROM ai_summaries a
+JOIN visits v       ON v.visit_id       = a.visit_id
+JOIN participants p ON p.participant_id = v.participant_id
+LEFT JOIN summary_reviews r ON r.summary_id = a.summary_id
+WHERE a.generation_status = 'SUCCEEDED'
+  AND r.review_id IS NULL
+GROUP BY p.reviewer_code
+ORDER BY p.reviewer_code;
