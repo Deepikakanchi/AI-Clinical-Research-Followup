@@ -9,7 +9,7 @@
 -- always make sense in a demo.
 --
 -- Contents (matches the Agile delivery document):
---   2 studies · 4 staff (2 coordinators, 2 reviewers)
+--   2 studies · 4 staff (2 coordinators, 2 reviewers) · 4 login accounts
 --   12 participants (10 ACTIVE, 2 WITHDRAWN)
 --   20 visits (8 COMPLETED, 4 MISSED, 7 SCHEDULED incl. 2 overdue, 1 CANCELLED)
 --   12 visit notes (2 deliberately incomplete, 1 prompt-injection test note)
@@ -41,6 +41,18 @@ INSERT INTO staff_members (staff_id, staff_code, display_label, role) VALUES
   (2, 'COORD-02', 'Coordinator B', 'COORDINATOR'),
   (3, 'REV-01',   'Reviewer A',    'REVIEWER'),
   (4, 'REV-02',   'Reviewer B',    'REVIEWER')
+ON CONFLICT DO NOTHING;
+
+-- ---------------------------------------------------------------------
+-- Login accounts for the 4 fictional staff (users table)
+-- Demo password for all four: Demo@2026   (stored ONLY as a bcrypt hash)
+-- Change them with:  python -m scripts.set_password <email>
+-- ---------------------------------------------------------------------
+INSERT INTO users (user_id, email, password_hash, staff_code) VALUES
+  (1, 'coord.01@example.org', '$2b$12$bWJJLYIk12VBZe2JrePGVO.XFzsJHcxP33ndNE4FAARL97Sacgvwe', 'COORD-01'),
+  (2, 'coord.02@example.org', '$2b$12$dOkdf6eBaUdp7ZcBJb.1h.dUxAVsK2Mu3kyXOEgAcLqH0f/gCXikG', 'COORD-02'),
+  (3, 'rev.01@example.org', '$2b$12$zuirDklMoWTIBOjVQf.wX.qpvONbTKR2cskkTxWFuVFXK9Cm/r7BO', 'REV-01'),
+  (4, 'rev.02@example.org', '$2b$12$HIDjj.WDN404C9o90FaLO.scSWdJKfAzv2XUBYNywGucotBarzkFy', 'REV-02')
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------
@@ -258,6 +270,7 @@ SELECT setval(pg_get_serial_sequence('visits',          'visit_id'),       GREAT
 SELECT setval(pg_get_serial_sequence('visit_notes',     'note_id'),        GREATEST((SELECT MAX(note_id)        FROM visit_notes),     1));
 SELECT setval(pg_get_serial_sequence('ai_summaries',    'summary_id'),     GREATEST((SELECT MAX(summary_id)     FROM ai_summaries),    1));
 SELECT setval(pg_get_serial_sequence('summary_reviews', 'review_id'),      GREATEST((SELECT MAX(review_id)      FROM summary_reviews), 1));
+SELECT setval(pg_get_serial_sequence('users',           'user_id'),        GREATEST((SELECT MAX(user_id)        FROM users),           1));
 SELECT setval(pg_get_serial_sequence('audit_events',    'event_id'),       GREATEST((SELECT MAX(event_id)       FROM audit_events),    1));
 
 COMMIT;
