@@ -10,19 +10,12 @@
 --
 -- Contents (matches the Agile delivery document):
 --   2 studies · 4 staff (2 coordinators, 2 reviewers) · 4 login accounts
---   12 participants (10 ACTIVE, 2 WITHDRAWN), each with an owning
---      coordinator and an assigned reviewer
+--   12 participants (10 ACTIVE, 2 WITHDRAWN)
 --   20 visits (8 COMPLETED, 4 MISSED, 7 SCHEDULED incl. 2 overdue, 1 CANCELLED)
 --   12 visit notes (2 deliberately incomplete, 1 prompt-injection test note)
 --   7 AI rows: 2 approved after correction, 1 approved unchanged,
 --              1 rejected, 2 awaiting review, 1 FAILED (content filter)
 -- All codes, labels and notes are fictional.
---
--- Who sees what after login (each user sees only their own participants):
---   coord.01@example.org (COORD-01) -> participants 1, 3, 4, 8, 11
---   coord.02@example.org (COORD-02) -> participants 2, 5, 6, 7, 9, 10, 12
---   rev.01@example.org   (REV-01)   -> participants 1, 2, 4, 5, 8, 12
---   rev.02@example.org   (REV-02)   -> participants 3, 6, 7, 9, 10, 11
 -- =====================================================================
 
 BEGIN;
@@ -65,22 +58,21 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------
 -- Participants: codes repeat across studies (unique only within a study)
 -- WITHDRAWN: participant 5 (STD-SLEEP-01 P-0005) and 10 (STD-MOB-REG P-0004)
--- coordinator_code = the coordinator who runs the participant's visits
--- reviewer_code    = the reviewer who reviews the participant's drafts
+-- Ownership: STD-SLEEP-01 -> COORD-01 / REV-01, STD-MOB-REG -> COORD-02 / REV-02
 -- ---------------------------------------------------------------------
 INSERT INTO participants (participant_id, study_id, participant_code, consent_status, coordinator_code, reviewer_code, consent_updated_at, enrolled_at) VALUES
-  ( 1, 1, 'P-0001', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-50, 9),  pg_temp.at_day(-50, 9)),
-  ( 2, 1, 'P-0002', 'ACTIVE',    'COORD-02', 'REV-01', pg_temp.at_day(-49, 9),  pg_temp.at_day(-49, 9)),
-  ( 3, 1, 'P-0003', 'ACTIVE',    'COORD-01', 'REV-02', pg_temp.at_day(-48, 9),  pg_temp.at_day(-48, 9)),
-  ( 4, 1, 'P-0004', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-47, 9),  pg_temp.at_day(-47, 9)),
-  ( 5, 1, 'P-0005', 'WITHDRAWN', 'COORD-02', 'REV-01', pg_temp.at_day(-15, 11), pg_temp.at_day(-46, 9)),
-  ( 6, 1, 'P-0006', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-45, 9),  pg_temp.at_day(-45, 9)),
-  ( 7, 2, 'P-0001', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-44, 10), pg_temp.at_day(-44, 10)),
-  ( 8, 2, 'P-0002', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-43, 10), pg_temp.at_day(-43, 10)),
-  ( 9, 2, 'P-0003', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-42, 10), pg_temp.at_day(-42, 10)),
+  (1, 1, 'P-0001', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-50, 9),  pg_temp.at_day(-50, 9)),
+  (2, 1, 'P-0002', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-49, 9),  pg_temp.at_day(-49, 9)),
+  (3, 1, 'P-0003', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-48, 9),  pg_temp.at_day(-48, 9)),
+  (4, 1, 'P-0004', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-47, 9),  pg_temp.at_day(-47, 9)),
+  (5, 1, 'P-0005', 'WITHDRAWN', 'COORD-01', 'REV-01', pg_temp.at_day(-15, 11), pg_temp.at_day(-46, 9)),
+  (6, 1, 'P-0006', 'ACTIVE',    'COORD-01', 'REV-01', pg_temp.at_day(-45, 9),  pg_temp.at_day(-45, 9)),
+  (7, 2, 'P-0001', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-44, 10), pg_temp.at_day(-44, 10)),
+  (8, 2, 'P-0002', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-43, 10), pg_temp.at_day(-43, 10)),
+  (9, 2, 'P-0003', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-42, 10), pg_temp.at_day(-42, 10)),
   (10, 2, 'P-0004', 'WITHDRAWN', 'COORD-02', 'REV-02', pg_temp.at_day(-8, 14),  pg_temp.at_day(-41, 10)),
-  (11, 2, 'P-0005', 'ACTIVE',    'COORD-01', 'REV-02', pg_temp.at_day(-40, 10), pg_temp.at_day(-40, 10)),
-  (12, 2, 'P-0006', 'ACTIVE',    'COORD-02', 'REV-01', pg_temp.at_day(-39, 10), pg_temp.at_day(-39, 10))
+  (11, 2, 'P-0005', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-40, 10), pg_temp.at_day(-40, 10)),
+  (12, 2, 'P-0006', 'ACTIVE',    'COORD-02', 'REV-02', pg_temp.at_day(-39, 10), pg_temp.at_day(-39, 10))
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------
@@ -91,7 +83,6 @@ ON CONFLICT DO NOTHING;
 --   17-19 SCHEDULED later
 --   20    CANCELLED
 -- No SCHEDULED visits for withdrawn participants (5, 10).
--- Every visit's coordinator_code matches its participant's coordinator_code.
 -- ---------------------------------------------------------------------
 INSERT INTO visits (visit_id, participant_id, scheduled_for, visit_type, status, coordinator_code, created_at, updated_at) VALUES
   ( 1,  1, pg_temp.at_day(-40, 9),  'BASELINE',  'COMPLETED', 'COORD-01', pg_temp.at_day(-50, 10), pg_temp.at_day(-40, 10)),
@@ -113,7 +104,7 @@ INSERT INTO visits (visit_id, participant_id, scheduled_for, visit_type, status,
   (17,  7, pg_temp.at_day(10, 14),  'FOLLOW_UP', 'SCHEDULED', 'COORD-02', pg_temp.at_day(-35, 16), pg_temp.at_day(-35, 16)),
   (18,  8, pg_temp.at_day(15, 9),   'FOLLOW_UP', 'SCHEDULED', 'COORD-01', pg_temp.at_day(-20, 17), pg_temp.at_day(-20, 17)),
   (19,  9, pg_temp.at_day(21, 10),  'CLOSE_OUT', 'SCHEDULED', 'COORD-02', pg_temp.at_day(-9, 12),  pg_temp.at_day(-9, 12)),
-  (20, 10, pg_temp.at_day(5, 13),   'FOLLOW_UP', 'CANCELLED', 'COORD-02', pg_temp.at_day(-10, 15), pg_temp.at_day(-8, 14))
+  (20, 10, pg_temp.at_day(5, 13),   'FOLLOW_UP', 'CANCELLED', 'COORD-01', pg_temp.at_day(-10, 15), pg_temp.at_day(-8, 14))
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------
@@ -156,8 +147,8 @@ ON CONFLICT DO NOTHING;
 --   2 visit 2  SUCCEEDED -> approved after correction
 --   3 visit 5  SUCCEEDED -> approved after correction
 --   4 visit 4  SUCCEEDED -> rejected (incomplete source)
---   5 visit 3  SUCCEEDED -> awaiting review (REV-01's queue)
---   6 visit 7  SUCCEEDED -> awaiting review (REV-02's queue, gaps listed)
+--   5 visit 3  SUCCEEDED -> awaiting review
+--   6 visit 7  SUCCEEDED -> awaiting review (incomplete note, gaps listed)
 --   7 visit 6  FAILED    -> CONTENT_FILTER (prompt-injection note), no draft
 -- No drafts for visit 8: participant 5 has WITHDRAWN consent.
 -- ---------------------------------------------------------------------
@@ -209,7 +200,6 @@ ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------
 -- Reviewer decisions. The AI drafts above are never changed.
--- Each reviewer_code matches the participant's assigned reviewer.
 -- ---------------------------------------------------------------------
 INSERT INTO summary_reviews (review_id, summary_id, final_text, decision, reviewer_code, reviewer_comment, follow_up_flag, reviewed_at) VALUES
   (1, 1, 'Baseline visit completed. The participant returned a fully completed 7-day sleep diary with an average reported sleep of 6.5 hours per night. A wearable device was issued and pairing was confirmed.',
@@ -235,7 +225,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO audit_events (event_id, entity_type, entity_id, action, actor_code, old_value, new_value, created_at)
 SELECT 200 + participant_id, 'participant', participant_id, 'PARTICIPANT_ENROLLED',
-       coordinator_code, NULL, 'ACTIVE', enrolled_at
+       CASE WHEN study_id = 1 THEN 'COORD-01' ELSE 'COORD-02' END, NULL, 'ACTIVE', enrolled_at
 FROM participants WHERE participant_id BETWEEN 1 AND 12
 ON CONFLICT DO NOTHING;
 
@@ -268,7 +258,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO audit_events (event_id, entity_type, entity_id, action, actor_code, old_value, new_value, created_at) VALUES
   (805, 'participant',  5, 'CONSENT_CHANGED', 'COORD-02', 'ACTIVE', 'WITHDRAWN', pg_temp.at_day(-15, 11)),
-  (810, 'participant', 10, 'CONSENT_CHANGED', 'COORD-02', 'ACTIVE', 'WITHDRAWN', pg_temp.at_day(-8, 14))
+  (810, 'participant', 10, 'CONSENT_CHANGED', 'COORD-01', 'ACTIVE', 'WITHDRAWN', pg_temp.at_day(-8, 14))
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------
