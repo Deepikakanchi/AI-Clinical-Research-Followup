@@ -1,4 +1,9 @@
-"""GET /api/studies (both roles) and POST /api/studies (coordinators). US-06."""
+"""
+routers/studies.py - Study endpoints owned by Rajnish Maurya .  (US-06)
+GET /api/studies (both roles) and POST /api/studies (coordinators only).
+
+Registered in main.py with: app.include_router(studies.router)
+"""
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 

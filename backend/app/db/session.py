@@ -1,4 +1,9 @@
-"""Database engine and one session per request."""
+"""
+db/session.py - Database engine and one session per request, owned by Rajnish Maurya.
+
+Routes get a session with: db: Session = Depends(get_db)
+Services commit explicitly; anything uncommitted is rolled back when the request ends.
+"""
 from collections.abc import Iterator
 from functools import lru_cache
 

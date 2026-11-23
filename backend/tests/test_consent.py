@@ -1,4 +1,8 @@
-"""Consent changes (US-09)."""
+"""
+tests/test_consent.py - Consent change tests, owned by Rajnish Maurya.  (US-09)
+
+Run from the backend folder with: pytest tests/test_consent.py
+"""
 from sqlalchemy import text
 
 from tests.conftest import owned_by, query

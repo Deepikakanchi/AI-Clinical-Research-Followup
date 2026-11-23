@@ -1,6 +1,12 @@
-"""Participants and consent (US-07, US-08, US-09).
+"""
+routers/participants.py - Participant and consent endpoints owned by Rajnish Maurya .
+(US-07, US-08, US-09)
 
+GET/POST /api/participants, GET /api/participants/{id},
+PATCH /api/participants/{id}/consent.
 There is deliberately NO delete route: participants are only ever set to WITHDRAWN.
+
+Registered in main.py with: app.include_router(participants.router)
 """
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session

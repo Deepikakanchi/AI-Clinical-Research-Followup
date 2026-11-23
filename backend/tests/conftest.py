@@ -1,16 +1,13 @@
-"""Shared test fixtures.
+"""
+tests/conftest.py - Shared test fixtures, owned by Rajnish Maurya .
 
 Tests run against a real PostgreSQL test database, rebuilt from
 database/schema.sql + database/seed.sql before EVERY test, so tests never
-depend on each other.
+depend on each other. After seeding, every login gets TEST_PASSWORD, and
+ownership is read from the database instead of being hard-coded.
 
-The tests do not rely on the seed's demo passwords or on exact seed rows:
-after seeding, every login account gets the password TEST_PASSWORD, and
-ownership (which participants belong to whom) is read from the database.
-
-Set TEST_DATABASE_URL in your shell before running pytest, e.g.
-    export TEST_DATABASE_URL=postgresql+psycopg://clinical:password@localhost:5432/clinical_followup_test
-The test database is wiped on every run: never point it at real data.
+Set TEST_DATABASE_URL before running pytest (it is wiped on every run:
+never point it at real data). Persons 2 and 3 reuse these fixtures.
 """
 import os
 from pathlib import Path

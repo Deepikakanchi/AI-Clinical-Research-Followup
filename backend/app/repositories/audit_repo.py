@@ -1,4 +1,9 @@
-"""SQL access for audit_events (append-only: insert and read only)."""
+"""
+repositories/audit_repo.py - SQL access for audit_events, owned by Rajnish Maurya.
+Append-only: insert and read only (the database blocks updates and deletes).
+
+Used by services/audit_service.py.
+"""
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

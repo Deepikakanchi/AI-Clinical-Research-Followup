@@ -1,8 +1,12 @@
-"""POST /api/auth/login (email + password) and GET /api/auth/me.
+"""
+routers/auth.py - Login endpoints owned by Rajnish Maurya.
+POST /api/auth/login (email + password) and GET /api/auth/me.
 
 Flow:  email + password  ->  users table (bcrypt check)  ->  staff_members (role, active)
        ->  token + role + home_path  ->  the UI redirects to home_path:
            COORDINATOR -> /coordinator/dashboard,  REVIEWER -> /reviewer/queue
+
+Registered in main.py with: app.include_router(auth.router)
 """
 import logging
 

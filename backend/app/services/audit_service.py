@@ -1,13 +1,17 @@
-"""Audit trail (US-30). Everyone records events through record().
+"""
+services/audit_service.py - Audit trail, owned by Rajnish Maurya.  (US-30)
 
-Call it inside the same transaction as the change; the caller commits.
-Values must be short codes or statuses: anything longer than 60 characters
-is refused, so note or draft text can never end up in the audit table.
+Everyone records events through record(), inside the same transaction as the
+change; the caller commits. Values must be short codes or statuses: anything
+longer than 60 characters is refused, so note or draft text can never end up
+in the audit table.
 
 Action names in use (keep to these):
   STUDY_CREATED, PARTICIPANT_ENROLLED, CONSENT_CHANGED,
   VISIT_SCHEDULED, VISIT_RESCHEDULED, VISIT_STATUS_CHANGED, NOTE_ADDED,
   AI_DRAFT_REQUESTED, REVIEW_APPROVED, REVIEW_REJECTED
+
+Persons 2 and 3 use: from app.services import audit_service
 """
 from sqlalchemy import select
 from sqlalchemy.orm import Session

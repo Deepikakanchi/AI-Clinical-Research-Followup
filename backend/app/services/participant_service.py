@@ -1,7 +1,11 @@
-"""Participant registration and consent rules (US-07, US-08, US-09).
+"""
+services/participant_service.py - Participant registration and consent rules,
+owned by Rajnish Maurya.  (US-07, US-08, US-09)
 
 Ownership: the registering coordinator owns the participant; the chosen reviewer
 is assigned to it. Other staff cannot see it (404).
+
+Persons 2 and 3 load participants with get_in_scope(db, user, participant_id).
 """
 import logging
 from datetime import datetime, timezone
