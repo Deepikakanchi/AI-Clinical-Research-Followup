@@ -1,16 +1,9 @@
-"""Dashboard, review queue, staff and audit schemas.  (US-22, US-27, US-28, US-30)"""
+"""Dashboard, follow-up and review-queue schemas.  (US-14, US-22, US-26, US-28, US-29)"""
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from app.schemas.visit import VisitOut
-
-
-class StaffOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    staff_code: str
-    display_label: str
-    role: str
 
 
 class FollowUpReport(BaseModel):
@@ -57,15 +50,3 @@ class FollowUpItems(BaseModel):
     missed_or_overdue_visits: list[VisitOut]
     notes_with_actions: list[NoteActionItem]
     flagged_summaries: list[FlaggedSummaryItem]
-
-
-class AuditOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    event_id: int
-    entity_type: str
-    entity_id: int
-    action: str
-    actor_code: str
-    old_value: str | None
-    new_value: str | None
-    created_at: datetime

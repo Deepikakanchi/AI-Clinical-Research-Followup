@@ -14,7 +14,7 @@ from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging_config import log_event, setup_logging
 from app.db.session import get_sessionmaker
-from app.routers import audit, auth, participants, staff, studies
+from app.routers import audit, auth, notes, participants, reports, staff, studies, visits
 
 # Person 2 adds:  from app.routers import notes, reports, visits
 # Person 3 adds:  from app.routers import summaries
@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
                   duration_ms=round((time.perf_counter() - started) * 1000, 1))
         return response
 
-    for module in (auth, staff, studies, participants, audit):
+    for module in (auth, staff, studies, participants, audit, visits, notes, reports):
         app.include_router(module.router)
     # Person 2: app.include_router(visits.router); app.include_router(notes.router); app.include_router(reports.router)
     # Person 3: app.include_router(summaries.router)
