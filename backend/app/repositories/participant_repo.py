@@ -1,4 +1,9 @@
-"""SQL access for participants. Every read is limited by owner_condition(user)."""
+"""
+repositories/participant_repo.py - SQL access for participants, owned by Rajnish Maurya.
+Every read is limited by owner_condition(user), so users only ever get their own participants.
+
+Used by services/participant_service.py.
+"""
 from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session, joinedload
 

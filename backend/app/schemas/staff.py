@@ -1,3 +1,9 @@
+"""
+schemas/staff.py - Pydantic model for staff in API responses, owned by Rajnish Maurya.
+Never includes login details (email, password hash).
+
+Used by routers/staff.py.
+"""
 from pydantic import BaseModel, ConfigDict
 
 

@@ -1,7 +1,12 @@
-"""SQLAlchemy models for all 9 tables (8 study tables + users for login).
+"""
+db/models.py - SQLAlchemy models for all 9 tables, owned by Rajnish Maurya.  (US-03)
+
+studies, staff_members, users, participants, visits, visit_notes,
+ai_summaries, summary_reviews, audit_events.
 
 database/schema.sql is the source of truth (constraints, triggers, indexes).
 These models mirror it column for column; they never create tables.
+Shared by all three team members' repositories.
 """
 from datetime import datetime
 

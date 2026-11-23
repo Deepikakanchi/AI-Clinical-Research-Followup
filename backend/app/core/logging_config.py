@@ -1,8 +1,11 @@
-"""Structured JSON logging that never writes sensitive content (US-31).
+"""
+core/logging_config.py - Structured JSON logging, owned by Rajnish Maurya.  (US-31)
 
 Use log_event(logger, "event_name", key=value, ...). Keys that could carry
 personal data or study text (names, emails, notes, drafts, tokens) are dropped
 automatically and listed under "redacted_fields" so the omission is visible.
+
+Set up once in main.py with: setup_logging(settings.log_level)
 """
 import json
 import logging

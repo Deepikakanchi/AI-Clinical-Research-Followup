@@ -1,4 +1,8 @@
-"""Email + password login, role-based redirect and role checks (US-27)."""
+"""
+tests/test_auth.py - Login, role redirect and role-check tests, owned by Rajnish Maurya.  (US-27)
+
+Run from the backend folder with: pytest tests/test_auth.py
+"""
 from sqlalchemy import text
 
 from tests.conftest import TEST_PASSWORD, email_of, login

@@ -1,7 +1,12 @@
-"""FastAPI application: settings, logging, CORS, error handlers and routers.
+"""
+main.py - FastAPI application entry point, owned by Rajnish Maurya.
+Creates the app, loads settings, sets up logging, CORS and error handlers,
+and registers every router.
 
 Run from the backend folder:  uvicorn app.main:app --reload
 Swagger UI:                    http://localhost:8000/docs
+
+Person 2 and Person 3 register their routers here.
 """
 import logging
 import time

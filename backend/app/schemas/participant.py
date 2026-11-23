@@ -1,3 +1,12 @@
+"""
+schemas/participant.py - Pydantic models for participants and consent,
+owned by Rajnish Maurya.  (US-07, US-08, US-09)
+
+ParticipantCreate, ConsentUpdate, ParticipantOut, ParticipantDetail.
+The participant code and the owning coordinator are set by the backend, never by the client.
+Used by routers/participants.py and services/participant_service.py.
+"""
+
 from datetime import datetime
 from typing import Literal
 

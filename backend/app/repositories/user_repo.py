@@ -1,4 +1,9 @@
-"""SQL access for users (login accounts). No business rules here."""
+"""
+repositories/user_repo.py - SQL access for login accounts (users table),
+owned by Rajnish Maurya. No business rules here.
+
+Used by routers/auth.py to find the account for an email at login.
+"""
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 

@@ -1,4 +1,9 @@
-"""GET /api/staff: reviewers for the 'Assigned reviewer' dropdown (coordinators only)."""
+"""
+routers/staff.py - Staff endpoint owned by Rajnish Maurya.
+GET /api/staff: active reviewers for the "Assigned reviewer" dropdown (coordinators only).
+
+Registered in main.py with: app.include_router(staff.router)
+"""
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

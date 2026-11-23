@@ -1,4 +1,6 @@
-"""Login tokens, the current user, role checks and the ownership rule (US-27).
+"""
+core/auth.py - Login tokens, current user, role checks and ownership rule,
+owned by Rajnish Maurya.  (US-27)
 
 How it works
 ------------
@@ -13,7 +15,8 @@ How it works
    a coordinator sees only participants they own, a reviewer only the
    participants assigned to them. Records outside the scope return 404.
 
-Persons 2 and 3: join your query to Participant and add
+Persons 2 and 3: add Depends(get_current_user) or Depends(require_role(...))
+to every route, and join every query to Participant with
     .where(owner_condition(user))
 """
 from dataclasses import dataclass

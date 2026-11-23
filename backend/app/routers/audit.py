@@ -1,4 +1,9 @@
-"""GET /api/audit-events: history of one record, only within the caller's scope (US-30)."""
+"""
+routers/audit.py - Audit endpoint owned by Rajnish Maurya.  (US-30)
+GET /api/audit-events: history of one record, only within the caller's scope.
+
+Registered in main.py with: app.include_router(audit.router)
+"""
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 

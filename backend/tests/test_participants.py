@@ -1,7 +1,10 @@
-"""Studies, participant registration, ownership segregation and audit (US-06 to US-08, US-27, US-30).
+"""
+tests/test_participants.py - Study, participant, segregation and audit tests,
+owned by Rajnish Maurya .  (US-06 to US-08, US-27, US-30)
 
 Expected rows are read from the seeded database, so these tests keep working
 if the seed data changes.
+Run from the backend folder with: pytest tests/test_participants.py
 """
 import pytest
 from sqlalchemy import text

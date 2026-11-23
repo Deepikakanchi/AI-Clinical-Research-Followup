@@ -1,3 +1,9 @@
+"""
+schemas/study.py - Pydantic models for studies, owned by Rajnish Maurya .  (US-06)
+
+StudyCreate (request) and StudyOut (response). Used by routers/studies.py.
+"""
+
 from datetime import datetime
 from typing import Literal
 

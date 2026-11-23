@@ -1,4 +1,10 @@
-"""SQL access for staff_members. No business rules here."""
+"""
+repositories/staff_repo.py - SQL access for staff_members, owned by Rajnish Maurya.
+No business rules here.
+
+Used by routers/staff.py (reviewer dropdown) and services/participant_service.py
+(checking the assigned reviewer).
+"""
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

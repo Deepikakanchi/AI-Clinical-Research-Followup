@@ -1,3 +1,10 @@
+"""
+schemas/audit.py - Pydantic model for audit events in API responses,
+owned by Rajnish Maurya.  (US-30)
+
+Used by routers/audit.py.
+"""
+
 from datetime import datetime
 from typing import Literal
 

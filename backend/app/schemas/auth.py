@@ -1,3 +1,10 @@
+"""
+schemas/auth.py - Pydantic models for login, owned by Rajnish Maurya.
+
+LoginIn (email + password), LoginOut (token, role, home_path) and MeOut.
+Used by routers/auth.py.
+"""
+
 from pydantic import BaseModel, Field, field_validator
 
 EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"

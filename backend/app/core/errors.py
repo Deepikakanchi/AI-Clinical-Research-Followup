@@ -1,7 +1,11 @@
-"""Domain errors and the handlers that turn them into HTTP responses.
+"""
+core/errors.py - Domain errors and HTTP error handlers, owned by Rajnish Maurya (Person 1).
 
-Services raise these; routers never build error responses by hand.
-Every error body has a "detail" field, matching openapi.yaml.
+Services raise these errors (NotFoundError, ConflictError, ...); routers never
+build error responses by hand. Every error body has a "detail" field, matching
+openapi.yaml. DraftUnavailableError is provided for Person 3's AI module.
+
+Registered in main.py with: register_exception_handlers(app)
 """
 import logging
 

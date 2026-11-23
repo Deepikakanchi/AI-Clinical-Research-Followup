@@ -1,7 +1,11 @@
-"""Application settings, loaded only from environment variables / .env (US-02).
+"""
+core/config.py - Application settings, owned by Rajnish Maurya.  (US-02)
 
+Loads every setting from environment variables / backend/.env.
 Nothing secret is ever hard-coded. If a required setting is missing, the app
 stops at start-up with a clear message that names the variable, never its value.
+
+Used everywhere through: from app.core.config import get_settings
 """
 from functools import lru_cache
 

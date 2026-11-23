@@ -1,4 +1,9 @@
-"""SQL access for studies. Studies are shared reference data (not owned)."""
+"""
+repositories/study_repo.py - SQL access for studies, owned by Rajnish Maurya.
+Studies are shared reference data (not owned by any one staff member).
+
+Used by routers/studies.py and services/participant_service.py.
+"""
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
