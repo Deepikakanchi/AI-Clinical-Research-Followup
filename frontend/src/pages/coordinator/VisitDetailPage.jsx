@@ -1,14 +1,16 @@
 ﻿/*
  * pages/coordinator/VisitDetailPage.jsx - One visit: status changes, notes, AI draft state
- * and history.
+ * and history, owned by Rajnish Maurya.
  *
  * Person 2's endpoints:
  *   GET   /api/visits/{id}          visit + draft_state
  *   PATCH /api/visits/{id}          reschedule or change status (the API enforces the rules)
  *   GET   /api/visits/{id}/notes    source notes, oldest first
  *   POST  /api/visits/{id}/notes    append a note (COMPLETED visits only)
- * Person 3's endpoint (button works once it is merged):
- *   POST  /api/visits/{id}/draft-summary
+ * Person 3's endpoints:
+ *   POST  /api/visits/{id}/draft-summary   generate a DRAFT (stored even when it fails, without text)
+ *   GET   /api/visits/{id}/summaries       draft history
+ *   GET   /api/summaries/{summary_id}      latest draft + reviewer decision
  * Notes are append-only: there is no edit or delete.  US-12, US-15, US-16.
  */
 import { useState } from 'react';
@@ -19,6 +21,7 @@ import {
   Badge, Empty, ErrorBanner, Field, History, LoadState, Modal, PageHeading, SaveButton,
   allowedStatusChanges, dateTime, localInputToIso, pretty, toLocalInput, useApi, useSave,
 } from '@/components/common/ui';
+import { DraftContent } from '@/components/review/DraftPanel';
 
 const ACTIONS = {
   SCHEDULED: 'Reschedule',
@@ -36,12 +39,20 @@ const DRAFT_TEXT = {
   DRAFT_UNAVAILABLE: 'The last attempt failed. You can try again.',
   CONSENT_WITHDRAWN: 'Consent withdrawn — AI drafts are disabled.',
 };
-const CAN_GENERATE = ['NOT_REQUESTED', 'REJECTED', 'DRAFT_UNAVAILABLE'];
+// States in which a new draft must NOT be requested; any other state (no draft yet,
+// rejected, failed) allows one. The API checks consent and notes again anyway.
+const BLOCKS_GENERATION = ['NO_NOTES', 'AWAITING_REVIEW', 'APPROVED', 'CONSENT_WITHDRAWN'];
 
 export default function VisitDetailPage() {
   const { id } = useParams();
   const visit = useApi(['visit', id], () => api.visit(id));
   const notes = useApi(['notes', id], () => api.notes(id));
+  const summaries = useApi(['summaries', id], () => api.visitSummaries(id));
+  const latest = summaries.data?.length
+    ? [...summaries.data].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+    : null;
+  const latestDetail = useApi(['summary', String(latest?.summary_id)], () => api.summary(latest.summary_id),
+    { enabled: !!latest });
   const statusSave = useSave();
   const noteSave = useSave();
   const draftSave = useSave();
@@ -77,9 +88,11 @@ export default function VisitDetailPage() {
   }
 
   const draftError = draftSave.error;
-  const aiNotReady = draftError && [404, 405].includes(draftError.status);
+  const aiNotReady = draftError && draftError.status === 405;
   const aiUnavailable = draftError && [502, 503, 504].includes(draftError.status);
-  const canGenerate = v && v.status === 'COMPLETED' && CAN_GENERATE.includes(v.draft_state) && v.consent_status !== 'WITHDRAWN';
+  const unsavedNote = observation.trim().length > 0 || actions.some(a => a.trim());
+  const canGenerate = v && v.status === 'COMPLETED' && !BLOCKS_GENERATION.includes(v.draft_state)
+    && v.consent_status !== 'WITHDRAWN' && !unsavedNote;
 
   return (
     <>
@@ -164,6 +177,11 @@ export default function VisitDetailPage() {
               </div>
               <div className="badge-pair"><Badge value={v.draft_state} /></div>
               <p className="muted small">{DRAFT_TEXT[v.draft_state] || ''}</p>
+                            {unsavedNote && (
+                <div className="warning-banner" role="status">
+                  <AlertTriangle size={18} />You have an unsaved note. Click “Save note” first — the AI only reads saved notes.
+                </div>
+              )}
               {aiUnavailable && (
                 <div className="warning-banner" role="alert">
                   <AlertTriangle size={18} />Draft unavailable — try again later.
@@ -172,6 +190,26 @@ export default function VisitDetailPage() {
               )}
               {aiNotReady && <div className="warning-banner" role="status"><AlertTriangle size={18} />AI drafting is not available yet in this build.</div>}
               {draftError && !aiUnavailable && !aiNotReady && <ErrorBanner error={draftError} />}
+
+              {latest && (
+                <>
+                  <div className={latest.generation_status === 'FAILED' ? '' : 'draft-box'}>
+                    {latest.generation_status !== 'FAILED' && <span className="eyebrow">LATEST AI DRAFT · NOT A CLINICAL DECISION</span>}
+                    <DraftContent summary={latest} />
+                  </div>
+                  {latestDetail.data?.review && (
+                    <div className={latestDetail.data.review.decision === 'APPROVED' ? 'approved-box' : 'source-note'}>
+                      <span className="eyebrow">
+                        {latestDetail.data.review.decision === 'APPROVED' ? 'REVIEWER-APPROVED RECORD' : 'REJECTED BY REVIEWER'}
+                      </span>
+                      {latestDetail.data.review.final_text && <p>{latestDetail.data.review.final_text}</p>}
+                      {latestDetail.data.review.reviewer_comment && <p className="small">Comment: {latestDetail.data.review.reviewer_comment}</p>}
+                      <small className="muted">{latestDetail.data.review.reviewer_code} · {dateTime(latestDetail.data.review.reviewed_at)}</small>
+                    </div>
+                  )}
+                  {summaries.data.length > 1 && <p className="muted small">{summaries.data.length} drafts generated for this visit; the latest is shown.</p>}
+                </>
+              )}
             </section>
 
             <History entityType="visit" entityId={v.visit_id} />

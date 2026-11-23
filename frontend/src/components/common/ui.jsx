@@ -73,11 +73,17 @@ export function Empty({ text = 'No records to display.' }) {
   return <div className="empty"><Inbox size={28} /><p>{text}</p></div>;
 }
 
-// Plain-language message for any API error.
 export function errorMessage(error) {
   if (!error) return '';
   if (error.status === 403) return 'Not allowed for your role.';
   if (error.status === 404) return 'Record not found or not available to you.';
+  // 422 errors that belong to the whole form (not one field) are shown in the banner.
+  if (Array.isArray(error.detail)) {
+    const general = error.detail
+      .filter(d => !Array.isArray(d.loc) || d.loc.length < 2)
+      .map(d => String(d.msg || '').replace(/^Value error, /, ''));
+    if (general.length) return general.join(' ');
+  }
   return error.message;
 }
 

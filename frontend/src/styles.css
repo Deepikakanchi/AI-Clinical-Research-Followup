@@ -317,3 +317,30 @@ tbody tr:hover { background: var(--background); }
 @media (min-width: 1400px) { .stats-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @media (max-width: 1100px) { .two-columns, .followup-grid { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .stat-value { font-size: 26px; } }
+
+
+
+
+/* ---------- Review screens (Person 3) ----------
+   Source notes = grey, AI draft = amber, reviewer final = green. Never alike. */
+.review-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; margin-top: 24px; }
+.review-panel { border: 1px solid var(--border); background: var(--muted); border-radius: var(--radius); padding: 20px; min-width: 0; }
+.review-panel > header { border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 16px; }
+.review-panel > header > span { font-size: 11px; font-weight: 750; letter-spacing: .05em; }
+.review-panel > header p { font-size: 11px; color: var(--muted-foreground); margin: 6px 0 0; }
+.review-panel h3 { font-size: 12px; margin: 16px 0 6px; }
+.review-panel p, .review-panel li { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.review-panel ul { padding-left: 18px; margin: 4px 0; }
+.review-panel textarea { min-height: 200px; font-size: 13px; line-height: 1.7; }
+.review-panel .source-note { background: var(--card); }
+.draft-panel { border-color: var(--warning-border); background: var(--warning-soft); }
+.draft-panel > header > span { color: var(--warning); }
+.final-panel { border-color: var(--success); background: var(--card); }
+.final-panel > header > span { color: var(--success); }
+.missing-info { border-left: 3px solid var(--warning-border); padding: 8px 12px; background: var(--card); color: var(--warning); margin-top: 8px; }
+.ai-disclaimer { color: var(--warning); font-size: 11px !important; font-weight: 600; }
+.review-meta { font-size: 11px; color: var(--muted-foreground); border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; line-height: 1.8; }
+.decision-options { display: flex; gap: 22px; margin: 6px 0 16px; }
+.decision-options label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+.final-approved { background: var(--success-soft); color: var(--success); padding: 8px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+@media (max-width: 1100px) { .review-grid { grid-template-columns: 1fr; } }
