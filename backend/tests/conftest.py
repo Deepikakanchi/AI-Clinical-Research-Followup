@@ -32,6 +32,22 @@ from app.core.config import get_settings  # noqa: E402
 from app.db.session import get_sessionmaker  # noqa: E402
 from app.main import create_app  # noqa: E402
 
+
+from types import SimpleNamespace  # noqa: E402
+from app.core.auth import create_access_token  # noqa: E402
+
+
+def _bearer(staff_code: str) -> dict:
+    """Ready-made login header for a seeded staff member (used by Person 2's tests)."""
+    return {"Authorization": f"Bearer {create_access_token(SimpleNamespace(staff_code=staff_code))}"}
+
+
+COORD = _bearer("COORD-01")    # owns participants 1, 3, 4, 8, 11
+COORD2 = _bearer("COORD-02")   # owns participants 2, 5, 6, 7, 9, 10, 12
+REV = _bearer("REV-01")        # reviews participants 1, 2, 4, 5, 8, 12
+REV2 = _bearer("REV-02")       # reviews participants 3, 6, 7, 9, 10, 11
+
+
 DATABASE_DIR = Path(__file__).resolve().parents[2] / "database"
 SCHEMA_SQL = (DATABASE_DIR / "schema.sql").read_text()
 SEED_SQL = (DATABASE_DIR / "seed.sql").read_text()
@@ -138,3 +154,10 @@ def rev1(client, reviewers):
 @pytest.fixture
 def rev2(client, reviewers):
     return auth_headers(client, reviewers[1])
+
+
+@pytest.fixture
+def db_conn():
+    """Plain psycopg connection for SQL checks (used by Person 2's tests)."""
+    with psycopg.connect(PSYCOPG_URL, autocommit=True) as conn:
+        yield conn

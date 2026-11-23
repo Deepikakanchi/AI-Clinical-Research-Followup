@@ -254,3 +254,26 @@ export function StudySelect({ value, onChange, allLabel = 'All studies' }) {
     </Field>
   );
 }
+
+
+
+/* ---------- Date helpers for <input type="datetime-local"> ---------- */
+
+// Date -> "YYYY-MM-DDTHH:mm" in the browser's local time (value for datetime-local inputs).
+export function toLocalInput(date = new Date()) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+// "YYYY-MM-DDTHH:mm" (local) -> ISO string with timezone, as the API expects.
+export const localInputToIso = value => new Date(value).toISOString();
+
+/* ---------- Visit status actions ---------- */
+
+// Which status changes the API allows for a visit. Uses the API's own list when it sends one;
+// otherwise only SCHEDULED visits can change (the API still checks every change).
+export function allowedStatusChanges(visit) {
+  if (Array.isArray(visit?.allowed_status_changes)) return visit.allowed_status_changes;
+  return visit?.status === 'SCHEDULED' ? ['SCHEDULED', 'COMPLETED', 'MISSED', 'CANCELLED'] : [];
+}

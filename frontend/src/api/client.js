@@ -84,7 +84,8 @@ export const api = {
   notes: visitId => request(`/api/visits/${visitId}/notes`),
   addNote: (visitId, body) => request(`/api/visits/${visitId}/notes`, { method: 'POST', body }),
   followUpReport: (params = {}) => request(`/api/reports/follow-ups${qs(params)}`),
-  followUpItems: (params = {}) => request(`/api/reports/follow-ups/items${qs(params)}`),
+  // Person 2's endpoint: { missed_or_overdue_visits, notes_with_actions, flagged_summaries }
+  followUpItems: (params = {}) => request(`/api/reports/follow-up-items${qs(params)}`),
 
   // ---- AI drafts and review (Person 3) ----
   generateDraft: visitId => request(`/api/visits/${visitId}/draft-summary`, { method: 'POST' }),

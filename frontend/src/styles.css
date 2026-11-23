@@ -265,3 +265,55 @@ tbody tr:hover { background: var(--background); }
   .login-form-section { padding: 32px 24px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+
+
+/* ---------- Dashboard (Person 2 screens) ---------- */
+.stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+.stat-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted-foreground); font-size: 12px; }
+.stat-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 6px; background: var(--muted); }
+.stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 750; display: block; margin-top: 10px; }
+.stat-caption { margin-top: 6px; font-size: 11px; color: var(--muted-foreground); }
+.tone-info .stat-icon { color: var(--info); background: var(--info-soft); }
+.tone-success .stat-icon { color: var(--success); background: var(--success-soft); }
+.tone-danger .stat-icon { color: var(--danger); background: var(--danger-soft); }
+.tone-warning .stat-icon { color: var(--warning); background: var(--warning-soft); }
+.two-columns { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; }
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.chart-row { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; font-size: 12px; }
+.chart-row:last-child { margin-bottom: 0; }
+.chart-label { width: 84px; color: var(--muted-foreground); }
+.chart-track { height: 12px; flex: 1; background: var(--muted); border-radius: 3px; overflow: hidden; }
+.chart-bar { height: 100%; background: var(--info); border-radius: 3px; }
+.chart-completed { background: var(--success); }
+.chart-missed { background: var(--danger); }
+.chart-cancelled { background: var(--muted-foreground); }
+.chart-count { min-width: 20px; font-weight: 600; text-align: right; }
+.attention-list { display: flex; flex-direction: column; gap: 10px; }
+.attention-item { display: flex; align-items: center; gap: 13px; background: var(--card); border: 1px solid var(--border); padding: 14px; border-radius: var(--radius); }
+.attention-item:hover { border-color: var(--primary); }
+.attention-item strong { font-size: 13px; }
+.attention-item p { margin: 3px 0 0; font-size: 11px; color: var(--muted-foreground); }
+.attention-item > svg:last-child { margin-left: auto; color: var(--muted-foreground); }
+.attention-icon { width: 34px; height: 34px; border-radius: 6px; display: grid; place-items: center; background: var(--warning-soft); color: var(--warning); }
+
+/* ---------- Visit detail: notes and actions ---------- */
+.action-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.source-note { background: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; margin: 12px 0; }
+.source-note p { font-size: 13px; margin: 6px 0; }
+.source-note ul { padding-left: 18px; margin: 6px 0; font-size: 12px; line-height: 1.8; }
+.source-note small { color: var(--muted-foreground); font-size: 11px; }
+.note-form { max-width: 720px; margin-top: 18px; }
+.action-input { display: flex; gap: 8px; align-items: flex-start; }
+.action-input > .field { flex: 1; margin-bottom: 10px; }
+.action-input > .btn { margin-top: 24px; }
+.draft-box { border: 1px solid var(--warning-border); background: var(--warning-soft); border-radius: 6px; padding: 16px 18px; margin-top: 12px; font-size: 13px; }
+.approved-box { border: 1px solid var(--success); background: var(--success-soft); border-radius: 6px; padding: 16px 18px; margin-top: 12px; font-size: 13px; }
+.status-draft-unavailable { background: var(--warning-soft); color: var(--warning); }
+.status-no-notes, .status-not-requested { background: var(--muted); color: var(--muted-foreground); }
+.followup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+@media (min-width: 1400px) { .stats-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .two-columns, .followup-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .stat-value { font-size: 26px; } }
