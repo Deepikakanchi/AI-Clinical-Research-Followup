@@ -22,7 +22,17 @@ router = APIRouter(prefix="/api/studies", tags=["Studies"])
 def list_studies(db: Session = Depends(get_db),
                  user: CurrentUser = Depends(get_current_user)) -> list[StudyOut]:
     # Studies are shared reference data, needed by everyone's dropdowns.
-    return [StudyOut.model_validate(s) for s in study_repo.list_all(db)]
+    # Counts are totals across all coordinators plus the caller's own share.
+    counts = study_repo.participant_counts(db, user)
+    result = []
+    for study in study_repo.list_all(db):
+        total, active, mine = counts.get(study.study_id, (0, 0, 0))
+        result.append(StudyOut.model_validate(study).model_copy(update={
+            "participant_count": total,
+            "active_participant_count": active,
+            "my_participant_count": mine,
+        }))
+    return result
 
 
 @router.post("", response_model=StudyOut, status_code=status.HTTP_201_CREATED)

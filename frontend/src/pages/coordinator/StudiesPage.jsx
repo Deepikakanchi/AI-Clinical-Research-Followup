@@ -47,14 +47,18 @@ export default function StudiesPage() {
 
       <LoadState query={studies}>
         <DataTable
-          columns={['Study code', 'Title', 'Type', 'Created', 'Status']}
+          columns={['Study code', 'Title', 'Type', 'Participants', 'Created', 'Status']}
           rows={studies.data}
           empty="No studies yet."
           renderRow={s => (
             <tr key={s.study_id}>
               <td><strong>{s.study_code}</strong></td>
               <td className="table-title">{s.title}</td>
-              <td>{pretty(s.study_type)}</td>
+                            <td>{pretty(s.study_type)}</td>
+              <td>
+                <strong>{s.participant_count ?? 0}</strong>
+                <span className="cell-sub">{s.active_participant_count ?? 0} active · {s.my_participant_count ?? 0} yours</span>
+              </td>
               <td>{dateOnly(s.created_at)}</td>
               <td><Badge value={s.active ? 'ACTIVE' : 'INACTIVE'} /></td>
             </tr>

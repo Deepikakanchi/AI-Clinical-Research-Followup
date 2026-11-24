@@ -4,11 +4,11 @@ Studies are shared reference data (not owned by any one staff member).
 
 Used by routers/studies.py and services/participant_service.py.
 """
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import Study
-
+from app.core.auth import CurrentUser, owner_condition
+from app.db.models import Participant, Study
 
 def list_all(db: Session) -> list[Study]:
     return list(db.scalars(select(Study).order_by(Study.study_code)))
@@ -31,3 +31,20 @@ def add(db: Session, study: Study) -> Study:
     db.add(study)
     db.flush()
     return study
+
+
+def participant_counts(db: Session, user: CurrentUser) -> dict[int, tuple[int, int, int]]:
+    """Per study: (all participants, active participants, the caller's own participants).
+
+    The first two are aggregate numbers across every coordinator; no participant
+    codes or details are returned, so other coordinators' records stay private.
+    """
+    rows = db.execute(
+        select(
+            Participant.study_id,
+            func.count(),
+            func.count().filter(Participant.consent_status == "ACTIVE"),
+            func.count().filter(owner_condition(user)),
+        ).group_by(Participant.study_id)
+    )
+    return {study_id: (total, active, mine) for study_id, total, active, mine in rows}

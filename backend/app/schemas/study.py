@@ -33,3 +33,8 @@ class StudyOut(BaseModel):
     study_type: StudyType
     active: bool
     created_at: datetime
+
+    # Aggregate counts (all coordinators) and the caller's own share.
+    participant_count: int = 0
+    active_participant_count: int = 0
+    my_participant_count: int = 0

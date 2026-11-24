@@ -222,3 +222,24 @@ def test_audit_events_cannot_be_changed(db):
         db.execute(text("UPDATE audit_events SET action = 'X' "
                         "WHERE event_id = (SELECT MIN(event_id) FROM audit_events)"))
     db.rollback()
+
+
+def test_study_list_shows_total_active_and_own_participant_counts(client, coord1, coordinators):
+    rows = {s["study_id"]: s for s in client.get("/api/studies", headers=coord1).json()}
+    expected = query("""
+        SELECT s.study_id,
+               COUNT(p.participant_id),
+               COUNT(p.participant_id) FILTER (WHERE p.consent_status = 'ACTIVE'),
+               COUNT(p.participant_id) FILTER (WHERE p.coordinator_code = %s)
+        FROM studies s LEFT JOIN participants p ON p.study_id = s.study_id
+        GROUP BY s.study_id""", (coordinators[0],))
+    for study_id, total, active, mine in expected:
+        assert (rows[study_id]["participant_count"], rows[study_id]["active_participant_count"],
+                rows[study_id]["my_participant_count"]) == (total, active, mine)
+
+
+def test_new_study_starts_with_zero_participants(client, coord1):
+    response = client.post("/api/studies", headers=coord1, json={
+        "study_code": "STD-COUNT-01", "title": "Count check study", "study_type": "REGISTRY"})
+    assert response.status_code == 201
+    assert response.json()["participant_count"] == 0

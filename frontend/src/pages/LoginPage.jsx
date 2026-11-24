@@ -10,6 +10,8 @@ import { api } from '@/api/client';
 import { useAuth } from '@/components/common/AuthContext';
 import { ErrorBanner, Field } from '@/components/common/ui';
 import { Footer } from '@/components/common/Layout';
+import workspace from '@/assets/research-workspace.jpg';
+import DailyQuote from '@/components/common/DailyQuote';
 
 export default function LoginPage() {
   const { user, ready, signIn } = useAuth();
@@ -43,11 +45,13 @@ export default function LoginPage() {
           <span className="brand-mark"><Activity size={23} /></span>
           <div>Clinical Research<span>FOLLOW-UP PORTAL</span></div>
         </span>
+        <DailyQuote />
         <span className="login-project">EY CAPSTONE PROJECT</span>
       </div>
 
       <div className="login-main">
         <section className="login-visual" aria-hidden="true">
+        <img className="login-visual-img" src={workspace} alt="" />
           <div className="login-visual-copy">
             <span className="eyebrow">PRECISION. CONTINUITY. CARE.</span>
             <h1>Clinical Research<br />Follow-up Portal</h1>
@@ -83,7 +87,6 @@ export default function LoginPage() {
               {busy ? 'Signing in…' : 'Sign in'}
               {!busy && <ArrowRight size={17} />}
             </button>
-            <small className="login-note">Demo login for fictional staff only.</small>
           </form>
         </section>
       </div>

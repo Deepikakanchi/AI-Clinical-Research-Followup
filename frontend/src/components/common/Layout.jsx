@@ -9,6 +9,7 @@ import {
   ShieldCheck, LogOut, Menu, X, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
+import DailyQuote from './DailyQuote';
 
 const MENUS = {
   COORDINATOR: [
@@ -84,6 +85,7 @@ export default function Layout() {
             <Menu size={18} />
           </button>
           <div className="breadcrumb">Workspace<ChevronRight size={13} /><strong>{current?.[0] || 'Record details'}</strong></div>
+          <DailyQuote />
           <div className="topbar-user">
             <span className="avatar" aria-hidden="true">{initials(label)}</span>
             <div className="user-info"><strong>{label}</strong><span>{user.staff_code}</span></div>

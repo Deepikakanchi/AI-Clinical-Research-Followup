@@ -344,3 +344,96 @@ tbody tr:hover { background: var(--background); }
 .decision-options label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
 .final-approved { background: var(--success-soft); color: var(--success); padding: 8px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
 @media (max-width: 1100px) { .review-grid { grid-template-columns: 1fr; } }
+
+
+
+/* ---------- Login left panel: photo background ---------- */
+.login-visual-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+}
+/* Remove the grid from the CSS-only version, if it was added */
+.login-visual::before { content: none; }
+/* Dark fade at the bottom so the white heading stays readable on the photo */
+.login-visual::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(0deg, oklch(.18 .02 190 / .82) 0%, oklch(.18 .02 190 / .35) 45%, transparent 75%);
+}
+.login-visual-copy { z-index: 1; }
+
+
+
+/* =====================================================================
+   Fit to screen
+   - Login page: exactly one screen tall on laptops and desktops (no scrolling).
+   - App pages: never wider than the screen; long pages scroll down only.
+   ===================================================================== */
+
+/* ---------- No sideways scrolling anywhere ---------- */
+html, body { overflow-x: hidden; }
+.main-shell, .page-content, .page-content > * { min-width: 0; }
+img, svg, video { max-width: 100%; }
+.table-scroll { max-width: 100%; }            /* wide tables scroll inside their own box */
+.filters .field, .heading-actions .field { min-width: 0; }
+
+/* ---------- Sidebar fits short screens ---------- */
+.sidebar { overflow-y: auto; }
+@media (max-height: 720px) {
+  .sidebar-info { display: none; }
+  .brand { padding: 20px 22px; }
+  .nav-item { padding: 10px 14px; margin: 2px 0; }
+}
+
+/* ---------- Login: one screen tall, no page scroll ---------- */
+.login-page { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+.login-top { flex-shrink: 0; height: 72px; }
+.login-main { flex: 1; min-height: 0; }
+.login-visual { min-height: 0; }
+.login-page .safety-footer { flex-shrink: 0; }
+.login-form-section {
+  max-height: 100%; overflow-y: auto;
+  padding: clamp(20px, 5vh, 60px) 35px;
+}
+.login-icon { margin-bottom: clamp(10px, 2.5vh, 24px); }
+.login-form-section h2 { font-size: clamp(22px, 3.4vh, 30px); }
+.login-form-section > p { margin: 8px 0 clamp(14px, 3vh, 26px); }
+.login-visual-copy { bottom: clamp(24px, 7vh, 70px); }
+.login-visual-copy h1 { font-size: clamp(24px, 4.4vh, 38px); }
+
+/* Short laptop screens (e.g. 1366 x 768 with browser bars) */
+@media (max-height: 700px) and (min-width: 761px) {
+  .login-icon { display: none; }
+  .login-visual-copy p { display: none; }
+}
+
+/* Phones: stack image above the form and allow normal scrolling */
+@media (max-width: 760px) {
+  .login-page { height: auto; min-height: 100dvh; overflow: visible; }
+  .login-main { flex: none; }
+  .login-visual { min-height: 180px; flex-shrink: 0; }
+  .login-form-section { max-height: none; overflow: visible; }
+}
+
+
+
+/* ---------- Daily quotation in the header ---------- */
+.daily-quote {
+  flex: 1; min-width: 0; margin: 0 24px; display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: 12px; font-style: italic; color: var(--muted-foreground);
+}
+.daily-quote > span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.daily-quote svg { color: var(--primary); flex-shrink: 0; }
+.daily-quote-by { font-style: normal; font-weight: 600; white-space: nowrap; color: var(--brand-ink); }
+.login-top .daily-quote { font-size: 13px; }
+/* Hide where space is tight; the full text also shows as a tooltip on hover */
+@media (max-width: 1100px) { .daily-quote { display: none; } }
+
+
+/* Opening and closing quotation marks */
+.daily-quote { gap: 2px; }
+.daily-quote .quote-mark {
+  font-family: Georgia, "Times New Roman", serif; font-style: normal;
+  font-size: 22px; line-height: 1; color: var(--primary); transform: translateY(3px);
+}
+.daily-quote .quote-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.daily-quote-by { margin-left: 8px; }

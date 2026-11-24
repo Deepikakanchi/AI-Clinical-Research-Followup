@@ -15,9 +15,19 @@ from pathlib import Path
 import psycopg
 import pytest
 
-TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+def _test_url_from_env_file() -> str | None:
+    """Fallback: read TEST_DATABASE_URL from backend/.env when it is not set in the terminal."""
+    env_file = Path(__file__).resolve().parents[1] / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            if line.strip().startswith("TEST_DATABASE_URL="):
+                return line.split("=", 1)[1].strip() or None
+    return None
+
+
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL") or _test_url_from_env_file()
 if not TEST_DATABASE_URL:
-    raise RuntimeError("Set TEST_DATABASE_URL to a throwaway PostgreSQL database before running tests")
+    raise RuntimeError("Set TEST_DATABASE_URL (in the terminal or in backend/.env) to a throwaway PostgreSQL database")
 
 # Configure the app BEFORE it is imported.
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
