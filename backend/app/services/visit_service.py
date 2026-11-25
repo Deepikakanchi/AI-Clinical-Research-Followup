@@ -66,7 +66,11 @@ def schedule(db: Session, user: CurrentUser, data: VisitCreate) -> dict:
     if participant.consent_status != "ACTIVE":
         raise ConflictError("Consent is withdrawn for this participant. New visits cannot be scheduled.",
                             code="CONSENT_WITHDRAWN")
-    coordinator = data.coordinator_code or participant.coordinator_code
+    # Segregation: a visit is always run by the participant's own coordinator
+    coordinator = participant.coordinator_code
+    if data.coordinator_code and data.coordinator_code != coordinator:
+        raise FieldValidationError("coordinator_code",
+                                   f"Visits for this participant are run by their coordinator ({coordinator})")
     _check_coordinator(db, coordinator)
     _check_clashes(db, data.scheduled_for, participant.participant_id, coordinator)
 

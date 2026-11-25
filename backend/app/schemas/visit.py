@@ -27,7 +27,7 @@ class VisitCreate(BaseModel):
     scheduled_for: datetime
     visit_type: VisitType
     coordinator_code: CoordinatorCode | None = Field(
-        None, description="Defaults to the participant's coordinator")
+        None, description="Optional. Always the participant's own coordinator; any other value is rejected (422)")
 
     @field_validator("scheduled_for")
     @classmethod

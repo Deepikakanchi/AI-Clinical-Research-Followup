@@ -125,6 +125,12 @@ def main():
     check("7h reviewer as coordinator -> 422", r.status_code == 422, r.status_code)
     r = c.post("/api/visits", json={**new, "scheduled_for": "2026-12-22T10:00:00Z", "name": "John"}, headers=C1)
     check("7i extra field -> 422", r.status_code == 422, r.status_code)
+    r = c.post("/api/visits", json={**new, "scheduled_for": "2026-12-22T10:00:00Z", "coordinator_code": "COORD-02"},
+               headers=C1)
+    check("7j another coordinator for your participant -> 422", r.status_code == 422, r.text[:120])
+    r = c.get("/api/visits", headers=C1)
+    check("7k segregation: every visit shows COORD-01", {v["coordinator_code"] for v in r.json()} == {"COORD-01"},
+          {v["coordinator_code"] for v in r.json()})
 
     print("\nTest 8: changing visits")
     p = lambda vid, body: c.patch(f"/api/visits/{vid}", json=body, headers=C1)
@@ -168,6 +174,8 @@ def main():
     C2, _ = login(c, "coord.02@example.org")
     r = c.get("/api/visits", headers=C2)
     check("11a only study 2 visits", sorted(ids(r)) == [5, 6, 7, 10, 11, 14, 17, 18, 19, 20], ids(r))
+    check("11a segregation: every visit shows COORD-02", {v["coordinator_code"] for v in r.json()} == {"COORD-02"},
+          {v["coordinator_code"] for v in r.json()})
     check("11b visit 1 -> 404", c.get("/api/visits/1", headers=C2).status_code == 404)
     check("11c change visit 15 -> 404",
           c.patch("/api/visits/15", json={"status": "CANCELLED"}, headers=C2).status_code == 404)
