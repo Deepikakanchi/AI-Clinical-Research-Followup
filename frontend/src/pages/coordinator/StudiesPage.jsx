@@ -10,7 +10,7 @@ import {
   Badge, DataTable, ErrorBanner, Field, LoadState, Modal, PageHeading, SaveButton, dateOnly, pretty, useApi, useSave,
 } from '@/components/common/ui';
 
-const EMPTY = { study_code: '', title: '', study_type: 'OBSERVATIONAL', active: true };
+const EMPTY = { study_code: '', title: '', study_type: '', active: true };
 
 export default function StudiesPage() {
   const studies = useApi(['studies'], api.studies);

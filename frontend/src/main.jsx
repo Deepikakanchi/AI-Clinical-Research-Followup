@@ -5,9 +5,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';   //the data-loading client (TanStack Query)
 import App from './App.jsx';
-import { AuthProvider } from './components/common/AuthContext.jsx';
+import { AuthProvider } from './components/common/AuthContext.jsx'; //login session (AuthProvider)
 import './styles.css';
 
 const queryClient = new QueryClient({
