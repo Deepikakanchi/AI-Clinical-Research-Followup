@@ -1,7 +1,7 @@
 ﻿/*
- * pages/coordinator/FollowUpsPage.jsx - Outstanding work.
+ * pages/coordinator/FollowUpsPage.jsx - Outstanding work, owned by Rajnish Maurya.
  * Uses Person 2's endpoint GET /api/reports/follow-up-items:
- *   missed_or_overdue_visits, notes_with_actions, flagged_summaries.
+ *   missed_or_overdue_visits, approved_actions (reviewer-confirmed follow-up actions), flagged_summaries.
  * Ordered by date only: no urgency score and no AI judgement.  US-14, US-26.
  */
 import { useState } from 'react';
@@ -48,9 +48,10 @@ export default function FollowUpsPage() {
             <div className="followup-grid section-block">
               <section>
                 <h2>Open follow-up actions</h2>
-                {data.notes_with_actions?.length ? data.notes_with_actions.map(n => (
-                  <div className="source-note" key={n.note_id}>
-                    <small>{n.participant_code ? `${n.participant_code} · ` : ''}{dateTime(n.visit_date || n.scheduled_for || n.created_at)}</small>
+                <p className="muted small">Confirmed by the reviewer when approving a visit summary.</p>
+                {data.approved_actions?.length ? data.approved_actions.map(n => (
+                  <div className="source-note" key={n.review_id}>
+                    <small>{n.participant_code} · {n.study_code} · approved by {n.reviewer_code} · {dateTime(n.reviewed_at)}</small>
                     <ul>{(n.follow_up_actions || []).map((a, i) => <li key={i}>{a}</li>)}</ul>
                     <Link className="back-link" to={`/coordinator/visits/${n.visit_id}`}>Open source visit<ArrowRight size={13} /></Link>
                   </div>

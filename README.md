@@ -1,6 +1,6 @@
 # Clinical Research Follow-up Portal
  
-AI-Powered Clinical Research and Patient Follow-up Management — EY AI & Data Capstone, Project 03.
+AI-Powered Clinical Research and Patient Follow-up Management — AI & Data Capstone, Project 03.
  
 A study coordination portal for **fictional** participants. Coordinators register participants, schedule
 visits and record visit notes. A hosted AI model **only drafts** visit summaries; a qualified reviewer
@@ -471,5 +471,5 @@ demonstrate this.
 | Person 2 — Deepika Kanchi | Visits, notes, dashboard and follow-up reports, SQL queries, workflow |
 | Person 3 — Jahnavi Krishnan | AI drafting, Foundry deployment and guardrails, architectural diagram |
  
-EY AI & Data Training — Capstone Project 03.
+AI & Data Training — Capstone Project 03.
  

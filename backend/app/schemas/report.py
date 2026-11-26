@@ -1,4 +1,8 @@
-"""Dashboard, follow-up and review-queue schemas.  (US-14, US-22, US-26, US-28, US-29)"""
+"""Dashboard, follow-up and review-queue schemas.  (US-14, US-22, US-26, US-28, US-29)
+
+Workflow (v2): open follow-up actions are the reviewer's final actions on APPROVED
+summaries (notes no longer hold actions).
+"""
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -28,12 +32,15 @@ class ReviewQueueItem(BaseModel):
     review_state: str
 
 
-class NoteActionItem(BaseModel):
-    note_id: int
+class ApprovedActionItem(BaseModel):
+    """Follow-up actions confirmed by the reviewer on an approved summary."""
+    review_id: int
+    summary_id: int
     visit_id: int
     participant_code: str
     study_code: str
-    created_at: datetime
+    reviewer_code: str
+    reviewed_at: datetime
     follow_up_actions: list[str]
 
 
@@ -48,5 +55,5 @@ class FlaggedSummaryItem(BaseModel):
 
 class FollowUpItems(BaseModel):
     missed_or_overdue_visits: list[VisitOut]
-    notes_with_actions: list[NoteActionItem]
+    approved_actions: list[ApprovedActionItem]
     flagged_summaries: list[FlaggedSummaryItem]

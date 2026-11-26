@@ -1,11 +1,17 @@
 """Validates and grounds a model reply before it can be stored (US-19, US-20).
 
 Checks, in order:
-1. The reply parses into SummaryDraft (schema, limits, review_status == DRAFT).
-2. Every follow-up action matches a documented action after normalising case and punctuation.
-3. Every number in the draft appears in the source the model was given.
-4. No clinical-decision wording appears unless the same word is in the source note.
-5. The staff message contains no patient-contact wording.
+1. The reply parses into SummaryDraft (1-5 summary points, at most 3 follow-up
+   actions, length limits, review_status == DRAFT).
+2. Every number in the draft appears in the source the model was given
+   (compound forms such as "28/30" are split, so reformatting is allowed but
+   calculated numbers are not).
+3. No clinical-decision wording appears in the points or actions unless the same
+   word is in the source note.
+4. Follow-up actions contain no patient-contact wording.
+
+The AI proposes the follow-up actions; the reviewer confirms, edits or adds to
+them before anything is approved.
 
 Any failure raises AIError, which summary_service turns into a FAILED row and a 502.
 """
@@ -31,13 +37,15 @@ BLOCKED_PATTERNS: list[re.Pattern] = [
         r"\beligib\w*",
         r"\btriag\w*",
         r"\brandomi[sz]\w*",
+        r"\bmedicat\w*",
+        r"\bdos(?:e|es|age|ing)\b",
         r"\brecommend\w*\s+(?:a\s+|the\s+)?treatment\w*",
         r"\btreatment\s+plan\w*",
         r"\bshould\s+(?:start|stop|take|increase|decrease|begin|continue)\b",
     )
 ]
 
-# Wording that would turn the staff note into a message to the participant.
+# Wording that would turn a staff action into contact with the participant.
 CONTACT_PATTERNS: list[re.Pattern] = [
     re.compile(p, re.IGNORECASE)
     for p in (
@@ -51,11 +59,7 @@ CONTACT_PATTERNS: list[re.Pattern] = [
 ]
 
 NUMBER_PATTERN = re.compile(r"\d+(?:[.,/:-]\d+)*")
-
-
-def normalize(text: str) -> str:
-    """Lowercase, drop punctuation and collapse whitespace."""
-    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", text.lower())).strip()
+NUMBER_PART = re.compile(r"\d+(?:\.\d+)?")
 
 
 def _strip_code_fences(raw: str) -> str:
@@ -81,25 +85,16 @@ def parse_draft(raw: str) -> SummaryDraft:
 
 
 def _draft_texts(draft: SummaryDraft) -> list[str]:
-    texts = [draft.visit_summary, *draft.recorded_observations, *draft.follow_up_actions, *draft.missing_information]
-    if draft.follow_up_message_draft:
-        texts.append(draft.follow_up_message_draft)
-    return texts
-
-
-def check_actions_grounded(draft: SummaryDraft, documented_actions: Iterable[str]) -> None:
-    allowed = {normalize(a) for a in documented_actions}
-    for action in draft.follow_up_actions:
-        if normalize(action) not in allowed:
-            raise AIError(UNGROUNDED_OUTPUT, "follow-up action not found in documented actions")
+    return [*draft.summary_points, *draft.follow_up_actions]
 
 
 def check_numbers_grounded(draft: SummaryDraft, source_text: str) -> None:
-    source_numbers = set(NUMBER_PATTERN.findall(source_text))
+    source_parts = set(NUMBER_PART.findall(source_text))
     for text in _draft_texts(draft):
         for number in NUMBER_PATTERN.findall(text):
-            if number not in source_numbers and number not in source_text:
-                raise AIError(UNGROUNDED_OUTPUT, "draft contains a number not present in the source")
+            for part in NUMBER_PART.findall(number):
+                if part not in source_parts:
+                    raise AIError(UNGROUNDED_OUTPUT, "draft contains a number not present in the source")
 
 
 def _introduced(patterns: Iterable[re.Pattern], text: str, source_lower: str) -> bool:
@@ -116,16 +111,14 @@ def check_blocked_wording(draft: SummaryDraft, source_text: str) -> None:
     for text in _draft_texts(draft):
         if _introduced(BLOCKED_PATTERNS, text, source_lower):
             raise AIError(UNGROUNDED_OUTPUT, "draft contains blocked clinical-decision wording")
-    if draft.follow_up_message_draft and _introduced(CONTACT_PATTERNS, draft.follow_up_message_draft, source_lower):
-        raise AIError(UNGROUNDED_OUTPUT, "staff message contains patient-contact wording")
+    for action in draft.follow_up_actions:
+        if _introduced(CONTACT_PATTERNS, action, source_lower):
+            raise AIError(UNGROUNDED_OUTPUT, "follow-up action contains patient-contact wording")
 
 
 def validate_draft(raw: str, prepared: PreparedPrompt) -> SummaryDraft:
     """Return a SummaryDraft that is safe to store, or raise AIError."""
     draft = parse_draft(raw)
-    if not draft.visit_summary.strip() and not draft.missing_information:
-        raise AIError(INVALID_OUTPUT, "both visit_summary and missing_information are empty")
-    check_actions_grounded(draft, prepared.documented_actions)
     check_numbers_grounded(draft, prepared.source_text)
     check_blocked_wording(draft, prepared.source_text)
     return draft

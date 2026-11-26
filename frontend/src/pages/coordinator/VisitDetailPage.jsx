@@ -15,7 +15,7 @@
  */
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, CalendarClock, Loader2, Plus, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CalendarClock, Loader2, Sparkles } from 'lucide-react';
 import { api } from '@/api/client';
 import {
   Badge, Empty, ErrorBanner, Field, History, LoadState, Modal, PageHeading, SaveButton,
@@ -43,6 +43,11 @@ const DRAFT_TEXT = {
 // rejected, failed) allows one. The API checks consent and notes again anyway.
 const BLOCKS_GENERATION = ['NO_NOTES', 'AWAITING_REVIEW', 'APPROVED', 'CONSENT_WITHDRAWN'];
 
+// Notes hold observations only. 16,000 characters is about 4,000 tokens (~4 characters per token).
+const NOTE_MAX = 16000;
+const TOKENS_MAX = 4000;
+const estimateTokens = text => Math.ceil(text.length / 4);
+
 export default function VisitDetailPage() {
   const { id } = useParams();
   const visit = useApi(['visit', id], () => api.visit(id));
@@ -60,7 +65,6 @@ export default function VisitDetailPage() {
   const [action, setAction] = useState(null);          // which status change is being confirmed
   const [newTime, setNewTime] = useState('');
   const [observation, setObservation] = useState('');
-  const [actions, setActions] = useState([]);
   const v = visit.data;
 
   function startAction(target) {
@@ -79,20 +83,21 @@ export default function VisitDetailPage() {
     event.preventDefault();
     const saved = await noteSave.run(() => api.addNote(id, {
       observation_text: observation.trim(),
-      follow_up_actions: actions.map(a => a.trim()).filter(Boolean),
     }));
-    if (saved) {
-      setObservation('');
-      setActions([]);
-    }
+    if (saved) setObservation('');
+  }
+
+  // A failed attempt is stored as a FAILED row too, so refresh the visit and its drafts either way.
+  async function generate() {
+    await draftSave.run(() => api.generateDraft(id));
+    visit.refetch();
+    summaries.refetch();
   }
 
   const draftError = draftSave.error;
   const aiNotReady = draftError && draftError.status === 405;
   const aiUnavailable = draftError && [502, 503, 504].includes(draftError.status);
-  const unsavedNote = observation.trim().length > 0 || actions.some(a => a.trim());
-  const canGenerate = v && v.status === 'COMPLETED' && !BLOCKS_GENERATION.includes(v.draft_state)
-    && v.consent_status !== 'WITHDRAWN' && !unsavedNote;
+  const canGenerate = v && v.status === 'COMPLETED' && !BLOCKS_GENERATION.includes(v.draft_state) && v.consent_status !== 'WITHDRAWN';
 
   return (
     <>
@@ -109,6 +114,7 @@ export default function VisitDetailPage() {
               <div><small>DATE & TIME</small><strong>{dateTime(v.scheduled_for)}</strong></div>
               <div><small>VISIT TYPE</small><strong>{pretty(v.visit_type)}</strong></div>
               <div><small>COORDINATOR</small><strong>{v.coordinator_code}</strong></div>
+              {v.reviewer_code && <div><small>REVIEWER</small><strong>{v.reviewer_code}</strong></div>}
               {v.consent_status && <div><small>CONSENT</small><Badge value={v.consent_status} /></div>}
             </div>
 
@@ -135,7 +141,7 @@ export default function VisitDetailPage() {
                     <span className="eyebrow">SOURCE NOTE</span>
                     <p>{n.observation_text}</p>
                     {n.follow_up_actions?.length > 0 && (
-                      <><strong className="small">Documented follow-up actions</strong>
+                      <><strong className="small">Follow-up actions (older note)</strong>
                         <ul>{n.follow_up_actions.map((a, i) => <li key={i}>{a}</li>)}</ul></>
                     )}
                     <small>{n.author_code} · {dateTime(n.created_at)}</small>
@@ -146,22 +152,23 @@ export default function VisitDetailPage() {
               {v.status === 'COMPLETED' ? (
                 <form className="note-form" onSubmit={addNote}>
                   <h3>Add a note</h3>
-                  <Field label="Observations" name="observation_text" error={noteSave.error} helper="Fictional information only. 20–4000 characters.">
-                    <textarea required minLength={20} maxLength={4000} value={observation} onChange={e => setObservation(e.target.value)} />
+                  <div className="note-guidance">
+                    <strong>How to write a good note</strong>
+                    <ul>
+                      <li>Write a complete note for this visit: the AI draft uses only the latest saved note.</li>
+                      <li>Record only what was observed or reported, in short factual sentences.</li>
+                      <li>Do not add follow-up actions here: the AI proposes up to 3 and the reviewer decides the final ones.</li>
+                      <li>Avoid numbers unless needed, and never calculate totals.</li>
+                      <li>No names, contact details or diagnoses: fictional information only.</li>
+                    </ul>
+                  </div>
+                  <Field label="Observations" name="observation_text" error={noteSave.error}
+                    helper={`20 to ${NOTE_MAX.toLocaleString()} characters (about ${TOKENS_MAX.toLocaleString()} tokens).`}>
+                    <textarea required minLength={20} maxLength={NOTE_MAX} value={observation} onChange={e => setObservation(e.target.value)} />
                   </Field>
-                  <div className="counter">{observation.length} / 4000</div>
-                  {actions.map((a, i) => (
-                    <div className="action-input" key={i}>
-                      <Field label={`Follow-up action ${i + 1}`} name="follow_up_actions" error={noteSave.error}>
-                        <input required minLength={3} maxLength={200} value={a} onChange={e => setActions(actions.map((x, j) => (j === i ? e.target.value : x)))} />
-                      </Field>
-                      <button type="button" className="btn btn-ghost btn-icon" aria-label={`Remove action ${i + 1}`} onClick={() => setActions(actions.filter((_, j) => j !== i))}><X size={16} /></button>
-                    </div>
-                  ))}
-                  <button type="button" className="btn btn-outline btn-sm" disabled={actions.length >= 10} onClick={() => setActions([...actions, ''])}>
-                    <Plus />Add follow-up action
-                  </button>
-                  <ErrorBanner error={noteSave.error} />
+                  <div className="counter">
+                    {observation.length.toLocaleString()} / {NOTE_MAX.toLocaleString()} characters · about {estimateTokens(observation).toLocaleString()} / {TOKENS_MAX.toLocaleString()} tokens
+                  </div>
                   <div className="form-actions"><SaveButton busy={noteSave.busy}>Save note</SaveButton></div>
                 </form>
               ) : <p className="muted small">Notes can be added once the visit is marked completed.</p>}
@@ -171,21 +178,16 @@ export default function VisitDetailPage() {
             <section className="section-block">
               <div className="section-header">
                 <div><h2>AI draft</h2><p>Drafts are reviewed and approved by the assigned reviewer, never by the AI.</p></div>
-                <button className="btn btn-outline" disabled={!canGenerate || draftSave.busy} onClick={() => draftSave.run(() => api.generateDraft(id))}>
+                <button className="btn btn-outline" disabled={!canGenerate || draftSave.busy} onClick={generate}>
                   {draftSave.busy ? <Loader2 className="spin" /> : <Sparkles />}{draftSave.busy ? 'Generating…' : 'Generate AI draft'}
                 </button>
               </div>
               <div className="badge-pair"><Badge value={v.draft_state} /></div>
               <p className="muted small">{DRAFT_TEXT[v.draft_state] || ''}</p>
-                            {unsavedNote && (
-                <div className="warning-banner" role="status">
-                  <AlertTriangle size={18} />You have an unsaved note. Click “Save note” first — the AI only reads saved notes.
-                </div>
-              )}
               {aiUnavailable && (
                 <div className="warning-banner" role="alert">
                   <AlertTriangle size={18} />Draft unavailable — try again later.
-                  <button className="btn btn-outline btn-sm" onClick={() => draftSave.run(() => api.generateDraft(id))}>Retry</button>
+                  <button className="btn btn-outline btn-sm" onClick={generate}>Retry</button>
                 </div>
               )}
               {aiNotReady && <div className="warning-banner" role="status"><AlertTriangle size={18} />AI drafting is not available yet in this build.</div>}
@@ -203,6 +205,14 @@ export default function VisitDetailPage() {
                         {latestDetail.data.review.decision === 'APPROVED' ? 'REVIEWER-APPROVED RECORD' : 'REJECTED BY REVIEWER'}
                       </span>
                       {latestDetail.data.review.final_text && <p>{latestDetail.data.review.final_text}</p>}
+                      {latestDetail.data.review.final_follow_up_actions?.length > 0 && (
+                        <><strong className="small">Follow-up actions</strong>
+                          <ul>{latestDetail.data.review.final_follow_up_actions.map((a, i) => <li key={i}>{a}</li>)}</ul></>
+                      )}
+                      {latestDetail.data.review.rejection_reasons?.length > 0 && (
+                        <><strong className="small">Reasons for rejection</strong>
+                          <ul>{latestDetail.data.review.rejection_reasons.map((r, i) => <li key={i}>{r}</li>)}</ul></>
+                      )}
                       {latestDetail.data.review.reviewer_comment && <p className="small">Comment: {latestDetail.data.review.reviewer_comment}</p>}
                       <small className="muted">{latestDetail.data.review.reviewer_code} · {dateTime(latestDetail.data.review.reviewed_at)}</small>
                     </div>

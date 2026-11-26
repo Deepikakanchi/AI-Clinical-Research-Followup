@@ -91,7 +91,7 @@ export default function VisitsPage() {
 
       <LoadState query={visits}>
         <DataTable
-          columns={['Participant', 'Study', 'Date & time', 'Visit type', 'Coordinator', 'Status', '']}
+          columns={['Participant', 'Study', 'Date & time', 'Visit type', 'Reviewer', 'Status', '']}
           rows={visits.data}
           empty="No visits match these filters."
           renderRow={v => (
@@ -100,7 +100,7 @@ export default function VisitsPage() {
               <td>{v.study_code}</td>
               <td>{dateTime(v.scheduled_for)}</td>
               <td>{pretty(v.visit_type)}</td>
-              <td>{v.coordinator_code}</td>
+              <td>{v.reviewer_code || '—'}</td>
               <td><div className="badge-pair"><Badge value={v.status} />{v.due_label && <Badge value={v.due_label} />}</div></td>
               <td><Link to={`/coordinator/visits/${v.visit_id}`} aria-label="Open visit"><ChevronRight size={16} /></Link></td>
             </tr>

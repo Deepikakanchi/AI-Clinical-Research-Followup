@@ -56,6 +56,7 @@ class VisitOut(BaseModel):
     visit_id: int
     participant_id: int
     participant_code: str
+    reviewer_code: str | None = None     # the participant's assigned reviewer
     study_id: int
     study_code: str
     scheduled_for: datetime

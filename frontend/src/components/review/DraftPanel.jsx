@@ -1,16 +1,11 @@
 /*
- * components/review/DraftPanel.jsx - The AI draft (amber).
- * Shows SummaryOut exactly as stored. It is never edited: the reviewer writes the
- * final text separately, so the original draft can always be compared.
+ * components/review/DraftPanel.jsx - The AI draft (amber), owned by Rajnish Maurya.
+ * Shows the stored draft exactly as the model produced it: up to 5 summary points
+ * and up to 3 proposed follow-up actions. It is never edited: the reviewer writes
+ * the final text and decides the follow-up actions separately.
  */
 import { AlertTriangle } from 'lucide-react';
 import { dateTime } from '@/components/common/ui';
-
-const SECTIONS = [
-  ['recorded_observations', 'Recorded observations'],
-  ['follow_up_actions', 'Follow-up actions'],
-  ['missing_information', 'Missing information'],
-];
 
 // Body of a draft; also used on the coordinator's visit page.
 export function DraftContent({ summary }) {
@@ -24,21 +19,13 @@ export function DraftContent({ summary }) {
   const d = summary.draft;
   return (
     <>
-      <h3>Visit summary</h3>
-      <p>{d.visit_summary}</p>
-      {SECTIONS.map(([key, label]) => (d[key]?.length > 0 ? (
-        <div key={key} className={key === 'missing_information' ? 'missing-info' : ''}>
-          <h3>{label}</h3>
-          <ul>{d[key].map((item, i) => <li key={i}>{item}</li>)}</ul>
-        </div>
-      ) : null))}
-      {d.follow_up_message_draft && (
-        <>
-          <h3>Follow-up message draft (never sent)</h3>
-          <p>{d.follow_up_message_draft}</p>
-        </>
-      )}
-      <p className="ai-disclaimer">AI-generated draft — not medical advice.</p>
+      <h3>Summary</h3>
+      <ol className="summary-points">{(d.summary_points || []).map((p, i) => <li key={i}>{p}</li>)}</ol>
+      <h3>Proposed follow-up actions</h3>
+      {d.follow_up_actions?.length
+        ? <ul>{d.follow_up_actions.map((a, i) => <li key={i}>{a}</li>)}</ul>
+        : <p className="muted small">No follow-up actions proposed.</p>}
+      <p className="ai-disclaimer">AI-generated draft — not medical advice. The reviewer decides the final follow-up actions.</p>
       <div className="review-meta">
         {[summary.deployment_name, summary.model_id].filter(Boolean).join(' / ')}
         <br />Created {dateTime(summary.created_at)}

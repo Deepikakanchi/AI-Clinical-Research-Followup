@@ -30,7 +30,7 @@ export function Footer() {
     <footer className="safety-footer">
       <ShieldCheck size={14} />
       <span>Synthetic data only. AI output is a draft and never a clinical decision.</span>
-      <span className="footer-project">EY Capstone Project</span>
+      <span className="footer-project">Capstone Project</span>
     </footer>
   );
 }
@@ -73,7 +73,7 @@ export default function Layout() {
             <div>Research with responsibility<p>Source-led. Human-reviewed.</p></div>
           </div>
           <div className="sidebar-signature">
-            <span className="ey-logo">EY<span /></span><span>CAPSTONE PROJECT</span><span>v1.0</span>
+            <span>CAPSTONE PROJECT</span><span>v1.0</span>
           </div>
         </div>
       </aside>

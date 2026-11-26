@@ -128,6 +128,8 @@ class SummaryReview(Base):
     decision: Mapped[str] = mapped_column(String(10))
     reviewer_code: Mapped[str] = mapped_column(ForeignKey("staff_members.staff_code"))
     reviewer_comment: Mapped[str | None] = mapped_column(String(1000))
+    final_follow_up_actions: Mapped[list] = mapped_column(JSONB, server_default="[]")
+    rejection_reasons: Mapped[list] = mapped_column(JSONB, server_default="[]")
     follow_up_flag: Mapped[bool] = mapped_column(Boolean, server_default="false")
     reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

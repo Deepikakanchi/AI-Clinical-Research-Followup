@@ -3,6 +3,9 @@
 This service can only INSERT into ai_summaries (plus an audit event). It has no
 code path that changes consent, visits, notes or review decisions.
 
+Workflow (v2): the AI reads only the latest saved note of the visit, returns up to
+5 summary points and proposes up to 3 follow-up actions for the reviewer.
+
 Interfaces used from Person 1:
 - app.core.auth: CurrentUser, owner_condition (via summary_repo)
 - app.core.errors: NotFoundError, ConflictError
@@ -11,6 +14,7 @@ Interfaces used from Person 1:
 """
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from sqlalchemy import null
@@ -31,6 +35,8 @@ NO_NOTES_MESSAGE = "Add a visit note before requesting an AI draft."
 PENDING_DRAFT_MESSAGE = "A draft for this visit is already awaiting review."
 ALREADY_APPROVED_MESSAGE = "This visit already has an approved summary."
 
+logger = logging.getLogger("app.ai")
+
 
 def generate_draft(db: Session, visit_id: int, user: CurrentUser, client: SummaryClient) -> AISummary:
     """Only the participant's own coordinator or assigned reviewer can request a draft."""
@@ -45,6 +51,8 @@ def generate_draft(db: Session, visit_id: int, user: CurrentUser, client: Summar
         raise ConflictError(CONSENT_WITHDRAWN_MESSAGE)
     if not notes:
         raise ConflictError(NO_NOTES_MESSAGE)
+    # Only the latest saved note is sent to the AI; each note must be complete on its own.
+    notes = [max(notes, key=lambda n: (n.created_at, n.note_id))]
     latest = summary_repo.latest_successful_summary(db, visit_id)
     if latest is not None:
         _, review = latest
@@ -72,6 +80,8 @@ def generate_draft(db: Session, visit_id: int, user: CurrentUser, client: Summar
     except AIError as err:
         if err.error_code == AI_DISABLED:
             raise  # AI switched off: return 503 straight away, nothing stored
+        # Log which check rejected the draft (code + rule only, never note or draft text)
+        logger.warning("ai_draft_rejected visit_id=%s error_code=%s rule=%s", visit_id, err.error_code, err)
         _store_failed(db, visit_id, actor_code, client, err, result)
         raise
 
@@ -113,7 +123,7 @@ def _store_failed(db: Session, visit_id: int, actor_code: str, client: SummaryCl
 
 def to_summary_out(summary: AISummary) -> SummaryOut:
     draft: Optional[SummaryDraft] = (
-        SummaryDraft.model_validate(summary.generated_draft) if summary.generated_draft else None
+        SummaryDraft.from_stored(summary.generated_draft) if summary.generated_draft else None
     )
     return SummaryOut(
         summary_id=summary.summary_id,

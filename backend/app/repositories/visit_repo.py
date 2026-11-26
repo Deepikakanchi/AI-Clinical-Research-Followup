@@ -3,6 +3,7 @@
 Every read is limited to the caller (same rule as owner_condition in core/auth.py):
 a coordinator sees only participants they own, a reviewer only participants assigned to them.
 Due / Overdue are calculated here in SQL, never stored and never by the AI.
+Open follow-up actions are the reviewer's final actions on APPROVED summaries.
 """
 from datetime import datetime
 
@@ -20,7 +21,7 @@ SCOPE = """(
 
 _VISIT_COLUMNS = """
     v.visit_id, v.participant_id, p.participant_code, s.study_id, s.study_code,
-    v.scheduled_for, v.visit_type, v.status, v.coordinator_code,
+    v.scheduled_for, v.visit_type, v.status, v.coordinator_code, p.reviewer_code,
     CASE
         WHEN v.status = 'SCHEDULED' AND v.scheduled_for < NOW() THEN 'OVERDUE'
         WHEN v.status = 'SCHEDULED' AND v.scheduled_for < NOW() + make_interval(days => :window) THEN 'DUE'
@@ -125,8 +126,10 @@ def follow_up_report(db: Session, user: CurrentUser, window: int, study_id: int 
         (SELECT COUNT(*) FROM v WHERE v.status = 'COMPLETED')                                         AS completed,
         (SELECT COUNT(*) FROM v WHERE v.status = 'MISSED')                                            AS missed,
         (SELECT COUNT(*) FROM v WHERE v.status = 'CANCELLED')                                         AS cancelled,
-        (SELECT COALESCE(SUM(jsonb_array_length(n.follow_up_actions)), 0)
-           FROM visit_notes n JOIN v ON v.visit_id = n.visit_id)                                     AS open_follow_up_actions,
+        (SELECT COALESCE(SUM(jsonb_array_length(r.final_follow_up_actions)), 0)
+           FROM summary_reviews r JOIN ai_summaries a ON a.summary_id = r.summary_id
+           JOIN v ON v.visit_id = a.visit_id
+          WHERE r.decision = 'APPROVED')                                                              AS open_follow_up_actions,
         (SELECT COUNT(*) FROM ai_summaries a JOIN v ON v.visit_id = a.visit_id
            LEFT JOIN summary_reviews r ON r.summary_id = a.summary_id
           WHERE a.generation_status = 'SUCCEEDED' AND r.review_id IS NULL)                           AS awaiting_review
@@ -136,16 +139,19 @@ def follow_up_report(db: Session, user: CurrentUser, window: int, study_id: int 
     return {k: int(v or 0) for k, v in row._mapping.items()}
 
 
-def notes_with_actions(db: Session, user: CurrentUser, study_id: int | None) -> list[dict]:
+def approved_follow_up_actions(db: Session, user: CurrentUser, study_id: int | None) -> list[dict]:
+    """Follow-up actions confirmed by reviewers on APPROVED summaries, oldest decision first."""
     sql = f"""
-    SELECT n.note_id, n.visit_id, p.participant_code, s.study_code, n.created_at, n.follow_up_actions
-    FROM visit_notes n
-    JOIN visits v       ON v.visit_id       = n.visit_id
+    SELECT r.review_id, a.summary_id, a.visit_id, p.participant_code, s.study_code,
+           r.reviewer_code, r.reviewed_at, r.final_follow_up_actions AS follow_up_actions
+    FROM summary_reviews r
+    JOIN ai_summaries a ON a.summary_id     = r.summary_id
+    JOIN visits v       ON v.visit_id       = a.visit_id
     JOIN participants p ON p.participant_id = v.participant_id
     JOIN studies s      ON s.study_id       = p.study_id
-    WHERE jsonb_array_length(n.follow_up_actions) > 0 AND {SCOPE}
+    WHERE r.decision = 'APPROVED' AND jsonb_array_length(r.final_follow_up_actions) > 0 AND {SCOPE}
       AND (CAST(:study_id AS INTEGER) IS NULL OR s.study_id = CAST(:study_id AS INTEGER))
-    ORDER BY n.created_at
+    ORDER BY r.reviewed_at
     """
     return [dict(r._mapping) for r in db.execute(text(sql), {"study_id": study_id, **_scope_params(user)})]
 

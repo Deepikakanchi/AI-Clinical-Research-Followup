@@ -46,7 +46,7 @@ export default function LoginPage() {
           <div>Clinical Research<span>FOLLOW-UP PORTAL</span></div>
         </span>
         <DailyQuote />
-        <span className="login-project">EY CAPSTONE PROJECT</span>
+        <span className="login-project">CAPSTONE PROJECT</span>
       </div>
 
       <div className="login-main">

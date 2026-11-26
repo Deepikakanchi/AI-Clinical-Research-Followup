@@ -5,6 +5,11 @@ before every test, users sign in through /api/auth/login, and each participant b
 to one coordinator and one reviewer. These tests read the rows they need from the seed
 instead of hard-coding IDs. The Foundry client is always faked; no Azure call is made.
 
+Workflow (v2):
+- Drafts have up to 5 summary points and at most 3 proposed follow-up actions.
+- APPROVED needs final text, a comment and at least one follow-up action.
+- REJECTED needs at least one reason and stores no follow-up actions.
+
 Run from backend/:  python -m pytest tests/test_review.py -v
 """
 from __future__ import annotations
@@ -57,25 +62,16 @@ def make_client(*script, **config):
 
 def draft_json(**overrides) -> str:
     draft = {
-        "visit_summary": "The participant attended a follow-up visit. Mild headache on 2 days this week was reported and BP 128/82 was recorded.",
-        "recorded_observations": ["Mild headache on 2 days this week", "BP 128/82 recorded"],
-        "follow_up_actions": ["Book follow-up visit in 4 weeks", "Send headache diary template"],
-        "missing_information": ["Headache duration is not stated"],
-        "follow_up_message_draft": "Staff to book follow-up visit in 4 weeks and send headache diary template.",
+        "summary_points": ["The participant attended the visit as recorded in the source note."],
+        "follow_up_actions": ["Book the next follow-up visit"],
         "review_status": "DRAFT",
     }
     draft.update(overrides)
     return json.dumps(draft)
 
 
-# A reply that is grounded in any seed note: no numbers, no follow-up actions, no blocked words.
-SAFE_DRAFT = draft_json(
-    visit_summary="The participant attended the visit as recorded in the source note.",
-    recorded_observations=[],
-    follow_up_actions=[],
-    missing_information=["The note does not state a timeframe for follow-up."],
-    follow_up_message_draft=None,
-)
+# A reply that is grounded in any seed note: no numbers and no blocked words.
+SAFE_DRAFT = draft_json()
 
 
 # ------------------------------------------------------------ seed lookups
@@ -146,8 +142,15 @@ def make_draft(client, fake_ai, draftable) -> int:
     return response.json()["summary_id"]
 
 
-APPROVE = {"decision": "APPROVED", "final_text": "Corrected summary: mild headache on 2 days; BP 128/82.",
-           "reviewer_comment": "Tightened wording"}
+APPROVE = {"decision": "APPROVED",
+           "final_text": "Corrected summary: the participant attended and the diary was returned.",
+           "reviewer_comment": "Checked against the source note and tightened the wording.",
+           "follow_up_actions": ["Book the next follow-up visit", "Send the next diary template"]}
+REJECT = {"decision": "REJECTED", "rejection_reasons": ["Sleep hours are not recorded", "The diary entries are missing"]}
+
+
+def review(client, summary_id, body, headers):
+    return client.patch(f"/api/summaries/{summary_id}/review", json=body, headers=headers)
 
 
 # ------------------------------------------------------ pre-call gates (US-18)
@@ -196,6 +199,17 @@ def test_outgoing_prompt_contains_no_codes(client, fake_ai, draftable):
         assert code not in sent
 
 
+def test_only_the_latest_note_is_sent(client, fake_ai, draftable):
+    visit_id, coordinator, _ = draftable
+    headers = auth_headers(client, coordinator)
+    latest = "Latest observation only: the participant returned the device in good condition."
+    assert client.post(f"/api/visits/{visit_id}/notes", json={"observation_text": latest}, headers=headers).status_code == 201
+    sdk = fake_ai(completion(SAFE_DRAFT))
+    assert create_draft(client, visit_id, headers).status_code == 201
+    user_message = sdk.calls[0]["messages"][1]["content"]
+    assert latest in user_message and "Note 2" not in user_message
+
+
 # ------------------------------------------------------ success and failure
 
 def test_successful_draft_is_stored_as_draft_with_audit(client, fake_ai, draftable):
@@ -205,6 +219,7 @@ def test_successful_draft_is_stored_as_draft_with_audit(client, fake_ai, draftab
     assert response.status_code == 201
     body = response.json()
     assert body["generation_status"] == "SUCCEEDED" and body["draft"]["review_status"] == "DRAFT"
+    assert body["draft"]["summary_points"] and len(body["draft"]["follow_up_actions"]) <= 3
     events = query("SELECT actor_code, old_value, new_value FROM audit_events "
                    "WHERE entity_type = 'summary' AND entity_id = %s", (body["summary_id"],))
     assert events == [(coordinator, None, "SUCCEEDED")]
@@ -214,7 +229,8 @@ def test_successful_draft_is_stored_as_draft_with_audit(client, fake_ai, draftab
     "script, status, code",
     [
         (openai.APITimeoutError(request=REQUEST), 504, "TIMEOUT"),
-        (completion(draft_json(follow_up_actions=["Start beta blocker"])), 502, "UNGROUNDED_OUTPUT"),
+        (completion(draft_json(follow_up_actions=["Prescribe a beta blocker"])), 502, "UNGROUNDED_OUTPUT"),
+        (completion(draft_json(follow_up_actions=["Book visit", "Send diary", "Check device", "File form"])), 502, "INVALID_OUTPUT"),
         (completion("not json"), 502, "INVALID_OUTPUT"),
         (completion(draft_json(), finish_reason="content_filter"), 502, "CONTENT_FILTER"),
     ],
@@ -268,56 +284,78 @@ def test_new_draft_blocked_while_one_awaits_review(client, fake_ai, draftable):
 
 def test_coordinator_cannot_approve(client, fake_ai, draftable):
     summary_id = make_draft(client, fake_ai, draftable)
-    headers = auth_headers(client, draftable[1])
-    assert client.patch(f"/api/summaries/{summary_id}/review", json=APPROVE, headers=headers).status_code == 403
+    assert review(client, summary_id, APPROVE, auth_headers(client, draftable[1])).status_code == 403
 
 
 def test_unassigned_reviewer_gets_404(client, fake_ai, draftable, reviewers):
     summary_id = make_draft(client, fake_ai, draftable)
     headers = auth_headers(client, other(reviewers, draftable[2]))
-    assert client.patch(f"/api/summaries/{summary_id}/review", json=APPROVE, headers=headers).status_code == 404
+    assert review(client, summary_id, APPROVE, headers).status_code == 404
 
 
-def test_assigned_reviewer_approval_keeps_original_draft(client, fake_ai, draftable):
+@pytest.mark.parametrize("missing", ["reviewer_comment", "follow_up_actions", "final_text"])
+def test_approve_needs_text_comment_and_actions(client, fake_ai, draftable, missing):
+    summary_id = make_draft(client, fake_ai, draftable)
+    body = {k: v for k, v in APPROVE.items() if k != missing}
+    response = review(client, summary_id, body, auth_headers(client, draftable[2]))
+    assert response.status_code == 422
+    assert query("SELECT COUNT(*) FROM summary_reviews WHERE summary_id = %s", (summary_id,)) == [(0,)]
+
+
+def test_approval_stores_reviewer_actions_and_keeps_original_draft(client, fake_ai, draftable):
     summary_id = make_draft(client, fake_ai, draftable)
     original = query("SELECT generated_draft FROM ai_summaries WHERE summary_id = %s", (summary_id,))
     headers = auth_headers(client, draftable[2])
-    response = client.patch(f"/api/summaries/{summary_id}/review", json=APPROVE, headers=headers)
-    assert response.status_code == 200 and response.json()["decision"] == "APPROVED"
+    response = review(client, summary_id, APPROVE, headers)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["decision"] == "APPROVED"
+    assert body["final_follow_up_actions"] == APPROVE["follow_up_actions"]   # AI's action kept + one added
+    assert body["reviewer_comment"] == APPROVE["reviewer_comment"] and body["rejection_reasons"] == []
     assert query("SELECT generated_draft FROM ai_summaries WHERE summary_id = %s", (summary_id,)) == original
 
     detail = client.get(f"/api/summaries/{summary_id}", headers=headers).json()
     assert detail["review_state"] == "APPROVED"
-    assert detail["summary"]["draft"]["visit_summary"] != detail["review"]["final_text"]
+    assert detail["summary"]["draft"]["follow_up_actions"] == ["Book the next follow-up visit"]
+    assert detail["review"]["final_follow_up_actions"] == APPROVE["follow_up_actions"]
     assert len(detail["source_notes"]) >= 1
+
+
+def test_reject_needs_reasons_and_stores_no_actions(client, fake_ai, draftable):
+    summary_id = make_draft(client, fake_ai, draftable)
+    reviewer = auth_headers(client, draftable[2])
+    assert review(client, summary_id, {"decision": "REJECTED", "reviewer_comment": "Not usable"}, reviewer).status_code == 422
+    rejected = review(client, summary_id, {**REJECT, "follow_up_actions": ["ignored"], "final_text": "ignored text here"}, reviewer)
+    assert rejected.status_code == 200, rejected.text
+    body = rejected.json()
+    assert body["rejection_reasons"] == REJECT["rejection_reasons"]
+    assert body["final_follow_up_actions"] == [] and body["final_text"] is None
+    fake_ai(completion(SAFE_DRAFT))   # a rejected draft allows a new one
+    assert create_draft(client, draftable[0], auth_headers(client, draftable[1])).status_code == 201
 
 
 def test_second_review_returns_409(client, fake_ai, draftable):
     summary_id = make_draft(client, fake_ai, draftable)
     headers = auth_headers(client, draftable[2])
-    url = f"/api/summaries/{summary_id}/review"
-    assert client.patch(url, json=APPROVE, headers=headers).status_code == 200
-    assert client.patch(url, json=APPROVE, headers=headers).status_code == 409
-
-
-def test_reject_needs_comment_then_allows_new_draft(client, fake_ai, draftable):
-    summary_id = make_draft(client, fake_ai, draftable)
-    reviewer = auth_headers(client, draftable[2])
-    url = f"/api/summaries/{summary_id}/review"
-    assert client.patch(url, json={"decision": "REJECTED"}, headers=reviewer).status_code == 422
-    rejected = client.patch(url, json={"decision": "REJECTED", "reviewer_comment": "Misses BP context"},
-                            headers=reviewer)
-    assert rejected.status_code == 200
-    fake_ai(completion(SAFE_DRAFT))
-    assert create_draft(client, draftable[0], auth_headers(client, draftable[1])).status_code == 201
+    assert review(client, summary_id, APPROVE, headers).status_code == 200
+    assert review(client, summary_id, APPROVE, headers).status_code == 409
 
 
 def test_follow_up_flag_is_saved(client, fake_ai, draftable):
     summary_id = make_draft(client, fake_ai, draftable)
-    body = {**APPROVE, "follow_up_flag": True}
-    response = client.patch(f"/api/summaries/{summary_id}/review", json=body,
-                            headers=auth_headers(client, draftable[2]))
+    response = review(client, summary_id, {**APPROVE, "follow_up_flag": True}, auth_headers(client, draftable[2]))
     assert response.status_code == 200 and response.json()["follow_up_flag"] is True
+
+
+def test_approved_actions_appear_in_follow_ups_and_dashboard(client, fake_ai, draftable):
+    summary_id = make_draft(client, fake_ai, draftable)
+    coordinator = auth_headers(client, draftable[1])
+    before = client.get("/api/reports/follow-ups", headers=coordinator).json()["open_follow_up_actions"]
+    assert review(client, summary_id, APPROVE, auth_headers(client, draftable[2])).status_code == 200
+    after = client.get("/api/reports/follow-ups", headers=coordinator).json()["open_follow_up_actions"]
+    assert after == before + len(APPROVE["follow_up_actions"])
+    items = client.get("/api/reports/follow-up-items", headers=coordinator).json()["approved_actions"]
+    assert any(i["summary_id"] == summary_id and i["follow_up_actions"] == APPROVE["follow_up_actions"] for i in items)
 
 
 def test_review_queue_is_scoped_to_the_assigned_reviewer(client, fake_ai, draftable, reviewers):
@@ -328,9 +366,29 @@ def test_review_queue_is_scoped_to_the_assigned_reviewer(client, fake_ai, drafta
     assert summary_id in [item["summary_id"] for item in client.get("/api/review-queue", headers=assigned).json()]
     assert summary_id not in [item["summary_id"] for item in client.get("/api/review-queue", headers=unassigned).json()]
 
-    client.patch(f"/api/summaries/{summary_id}/review", json=APPROVE, headers=assigned)
+    review(client, summary_id, APPROVE, assigned)
     assert summary_id not in [item["summary_id"] for item in client.get("/api/review-queue", headers=assigned).json()]
 
 
 def test_review_queue_needs_sign_in(client):
     assert client.get("/api/review-queue").status_code == 401
+
+
+def test_seeded_drafts_and_reviews_use_the_new_format(client, rev1):
+    detail = client.get("/api/summaries/2", headers=rev1).json()
+    assert len(detail["summary"]["draft"]["summary_points"]) == 5
+    assert len(detail["review"]["final_follow_up_actions"]) == 3
+
+
+# ------------------------------------------------------------------ notes (v2)
+
+def test_notes_take_observations_only(client, draftable):
+    visit_id, coordinator, _ = draftable
+    headers = auth_headers(client, coordinator)
+    url = f"/api/visits/{visit_id}/notes"
+    ok = client.post(url, json={"observation_text": "The participant returned the sleep diary today."}, headers=headers)
+    assert ok.status_code == 201 and ok.json()["follow_up_actions"] == []
+    with_actions = {"observation_text": "The participant returned the sleep diary today.", "follow_up_actions": ["Book visit"]}
+    assert client.post(url, json=with_actions, headers=headers).status_code == 422
+    assert client.post(url, json={"observation_text": "x" * 16001}, headers=headers).status_code == 422
+    assert client.post(url, json={"observation_text": "Long but allowed. " + "y" * 15000}, headers=headers).status_code == 201

@@ -120,7 +120,7 @@ def test_due_and_overdue_labels_come_from_the_api(client):
 def test_dashboard_matches_sql_and_updates(client):
     report = client.get("/api/reports/follow-ups").json()
     assert report == {"active_participants": 5, "scheduled": 3, "due_7_days": 2, "overdue": 1, "completed": 5,
-                      "missed": 2, "cancelled": 0, "open_follow_up_actions": 8, "awaiting_review": 1}
+                      "missed": 2, "cancelled": 0, "open_follow_up_actions": 5, "awaiting_review": 1}
     client.patch("/api/visits/13", json={"status": "COMPLETED"})
     after = client.get("/api/reports/follow-ups").json()
     assert (after["completed"], after["overdue"], after["scheduled"]) == (6, 0, 2)
@@ -131,7 +131,7 @@ def test_dashboard_matches_sql_and_updates(client):
 
 
 def test_notes_rules(client, db_conn):
-    note = {"observation_text": "Participant returned the diary for all 7 days.", "follow_up_actions": ["Book next visit"]}
+    note = {"observation_text": "Participant returned the diary for all 7 days."}
     assert client.post("/api/visits/15/notes", json=note).status_code == 409          # SCHEDULED
     assert client.post("/api/visits/1/notes", json={"observation_text": "Too short"}).status_code == 422
     first = db_conn.execute("SELECT observation_text FROM visit_notes WHERE note_id=1").fetchone()
@@ -140,7 +140,7 @@ def test_notes_rules(client, db_conn):
     notes = client.get("/api/visits/1/notes").json()
     assert [n["note_id"] for n in notes][-1] == r.json()["note_id"] and len(notes) == 2   # oldest first
     assert db_conn.execute("SELECT observation_text FROM visit_notes WHERE note_id=1").fetchone() == first
-
+    assert client.post("/api/visits/1/notes", json={**note, "follow_up_actions": ["Book next visit"]}).status_code == 422
 
 def test_visit_detail_draft_states(client):
     assert client.get("/api/visits/1").json()["draft_state"] == "APPROVED"
@@ -163,3 +163,4 @@ def test_requests_without_login_are_rejected(app):
     with TestClient(app) as anonymous:
         assert anonymous.get("/api/visits").status_code == 401
         assert anonymous.get("/api/reports/follow-ups").status_code == 401
+

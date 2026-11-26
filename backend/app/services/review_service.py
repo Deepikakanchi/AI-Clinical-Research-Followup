@@ -3,6 +3,11 @@
 The review inserts one summary_reviews row and one audit event in a single
 transaction. The ai_summaries row and the visit notes are never touched, so
 source, draft and approved text stay separately visible.
+
+Workflow (v2):
+- APPROVED stores the final text, the reviewer's comment and the reviewer's final
+  follow-up actions (the AI's proposals, edited, removed or added to).
+- REJECTED stores the reasons; no follow-up actions.
 """
 from __future__ import annotations
 
@@ -47,6 +52,8 @@ def submit_review(db: Session, summary_id: int, payload: ReviewUpdate, user: Cur
         decision=payload.decision,
         reviewer_code=reviewer_code,
         reviewer_comment=payload.reviewer_comment or None,
+        final_follow_up_actions=list(payload.follow_up_actions),
+        rejection_reasons=list(payload.rejection_reasons),
         follow_up_flag=payload.follow_up_flag,
     )
     audit_service.record(db, entity_type="review", entity_id=review.review_id,
@@ -82,5 +89,3 @@ def get_summary_detail(db: Session, summary_id: int, user: CurrentUser) -> Summa
         source_notes=[SourceNoteOut.model_validate(n) for n in notes],
         review_state=_review_state(summary.generation_status, review),
     )
-
-

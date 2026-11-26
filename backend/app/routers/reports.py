@@ -1,5 +1,11 @@
 """Dashboard, follow-ups and review queue.  (US-14, US-22, US-26, US-28, US-29)
 
+GET /api/reports/follow-ups        dashboard counts (SQL)
+GET /api/reports/follow-up-items   missed/overdue visits, reviewer-approved follow-up actions,
+                                   flagged summaries - ordered by date, no AI
+GET /api/review-queue              drafts awaiting the logged-in reviewer
+
+Workflow (v2): open follow-up actions come from APPROVED reviews, not from notes.
 GET /api/staff and GET /api/audit-events live in Person 1's routers.
 """
 from fastapi import APIRouter, Depends, Query
@@ -22,13 +28,13 @@ def follow_up_report(study_id: int | None = Query(None, gt=0), db: Session = Dep
 
 
 @router.get("/reports/follow-up-items", response_model=FollowUpItems, responses={401: {}},
-            summary="Missed and overdue visits, notes with actions and flagged summaries, by date (no AI)")
+            summary="Missed and overdue visits, reviewer-approved follow-up actions and flagged summaries, by date (no AI)")
 def follow_up_items(study_id: int | None = Query(None, gt=0), db: Session = Depends(get_db),
                     user: CurrentUser = Depends(get_current_user)):
     return {
         "missed_or_overdue_visits": visit_repo.list_visits(db, user, get_settings().due_window_days,
                                                            study_id=study_id, view="follow_up"),
-        "notes_with_actions": visit_repo.notes_with_actions(db, user, study_id),
+        "approved_actions": visit_repo.approved_follow_up_actions(db, user, study_id),
         "flagged_summaries": visit_repo.flagged_summaries(db, user, study_id),
     }
 
